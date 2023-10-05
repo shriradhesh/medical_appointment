@@ -1,0 +1,66 @@
+
+patient Schema  : 
+
+CREATE TABLE `medical_appoinment`.`patient` (`id` INT(20) NOT NULL AUTO_INCREMENT , `FirstName` VARCHAR(255) NOT NULL , `LastName` VARCHAR(255) NOT NULL , `DOB` VARCHAR(20) NOT NULL , `Gender` ENUM('male','female','others','') NOT NULL , `Address` VARCHAR(200) NOT NULL , `Email` VARCHAR(200) NOT NULL , `Password` VARCHAR(200) NOT NULL , `Phone_no` VARCHAR(200) NOT NULL , `Emergency_Contact` VARCHAR(200) NOT NULL , `Relationship_to_Patient` VARCHAR(200) NOT NULL , PRIMARY KEY (`id`), UNIQUE `Email` (`Email`(50))) ENGINE = InnoDB;
+
+
+
+	const updateBus = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const {
+      bus_type,
+      seating_capacity,
+      model,
+      manufacture_year,
+      amenities,
+      status,
+      availability,
+    } = req.body;
+
+    const existBusQuery = 'SELECT * FROM buses WHERE id = ?';
+    const [rows] = await pool.execute(existBusQuery, [id]);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Bus Not found', success: false });
+    }
+
+    const validStatus = ['active', 'inactive'];
+    const validAvailability = ['available', 'unavailable', 'booked'];
+
+    // Check if the provided status and availability are valid, otherwise use default values
+    const driverStatus = validStatus.includes(status) ? status : 'active';
+    const busAvailability = validAvailability.includes(availability) ? availability : 'available';
+
+    const updateBusQuery = `
+      UPDATE buses
+      SET bus_type = ?, seating_capacity = ?, model = ?, manufacture_year = ?,
+          amenities = ?, status = ?, availability = ?
+      WHERE id = ?
+    `;
+
+    await pool.execute(updateBusQuery, [
+      bus_type,
+      seating_capacity,
+      model,
+      manufacture_year,
+      amenities,
+      driverStatus,
+      busAvailability,
+      id,
+    ]);
+
+    if (req.file) {
+      // Handle file upload and update in the database as needed
+      const filePath = req.file.path;
+
+      // You may need to implement code to update the file path in the database
+      // and handle file deletion if necessary
+    }
+
+    res.status(200).json({ success: true, message: 'Bus Details Edited Successfully' });
+  } catch (error) {
+    console.error('Error while editing the bus details:', error);
+    res.status(500).json({ success: false, error: 'Error while editing the bus details' });
+  }
+};
