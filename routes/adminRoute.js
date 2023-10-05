@@ -39,6 +39,8 @@ const adminController = require('../controller/adminController')
                  router.put('/updateDoctorDetails/:doctorId', adminController.updateDoctorDetails)
 // API for check and Toggle status 
                  router.post('/checkAndToggleStatus/:doctorId', adminController.checkAndToggleStatus)
+// API for delete Docotor where status = 0
+                 router.delete('/deleteDoctor/:doctorId', adminController.deleteDoctor)
 
 
 

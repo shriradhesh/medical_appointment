@@ -2,7 +2,7 @@ const upload = require('../uploadImages')
 const con = require('../config/db')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto');
-const { validationResult } = require('express-validator');
+const { validationResult, check } = require('express-validator');
 const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
 
 
@@ -387,6 +387,8 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         password,
                                                         Phone_no,
                                                         Address,
+                                                        city,
+                                                        state,
                                                         status
                                                     } = req.body;
                                             
@@ -401,6 +403,8 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         'password',
                                                         'Phone_no',
                                                         'Address',
+                                                        'city',
+                                                        'state',
                                                         'status'
                                                     ];
                                             
@@ -459,8 +463,8 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         }                                         
                                                     
                                                         const sql = `INSERT INTO doctor (firstName, lastName, Gender, DOB, specialization, 
-                                                            licenseNumber, Email, password, Phone_no, profileImage, Address, status)
-                                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                                                            licenseNumber, Email, password, Phone_no, profileImage, Address,city , state , status)
+                                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
                                             
                                                         con.query(
                                                             sql,
@@ -476,6 +480,8 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                                 Phone_no,
                                                                 imagePath,
                                                                 Address,
+                                                                city,
+                                                                state,
                                                                 status
                                                             ],
                                                             (error, result) => {
@@ -496,6 +502,8 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                                         Phone_no,
                                                                         profileImage: imagePath,
                                                                         Address,
+                                                                        city,
+                                                                        state,
                                                                         status,
                                                                         doctorId: result.insertId
                                                                     };
@@ -595,6 +603,8 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                             specialization: newData.specialization,
                                                             Phone_no: newData.Phone_no,
                                                             Address: newData.Address,
+                                                            city : newData.city,
+                                                            state : newData.state
                                                         };
                                             
                                                         // Update the database with the new data
@@ -663,6 +673,44 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                         };
                                         
 
+// APi for delete Doctor which have status 0
+                                        const deleteDoctor = (req, res) => {
+                                            const doctorId = req.params.doctorId;
+                                            
+                                            // Check if the doctor exists and has status = 0
+                                            const checkId = `SELECT doctorId FROM doctor WHERE doctorId = ? AND status = 0`;
+
+                                            con.query(checkId, [doctorId], (error, checkResult) => {
+                                                if (error) {
+                                                    return res.status(500).json({
+                                                        success: false,
+                                                        error: 'Error while checking Doctor Id'
+                                                    });
+                                                }
+                                                if (checkResult.length === 0) {
+                                                    return res.status(400).json({
+                                                        success: false,
+                                                        error: 'Doctor Id not exist or status is not 0'
+                                                    });
+                                                } else {
+                                                    const deleteSql = `DELETE FROM doctor WHERE doctorId = ?`;
+
+                                                    con.query(deleteSql, [doctorId], (error, result) => {
+                                                        if (error) {
+                                                            return res.status(500).json({
+                                                                success: false,
+                                                                error: 'Error while deleting doctor record'
+                                                            });
+                                                        } else {
+                                                            return res.status(200).json({
+                                                                success: true,
+                                                                message: 'Doctor deleted successfully'
+                                                            });
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        }
 
 
 
@@ -671,4 +719,4 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
     
 module.exports = { register_Admin, loginAdmin , AdminChangePass  , Admin_forgetPassToken,
                    Admin_reset_Password ,updateProfile  , AddDoctor , allDoctor , getDoctor,
-                   updateDoctorDetails , checkAndToggleStatus}
+                   updateDoctorDetails , checkAndToggleStatus , deleteDoctor}
