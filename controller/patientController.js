@@ -359,11 +359,122 @@ const upload = require('../uploadImages')
                                 };
                                 
                                 
-          
+    // API for search Doctor 
+                                    const searchDoctor = async (req, res) => {
+                                        try {
+                                        let { city, state, specialization, Experience } = req.query;
+                                    
+                                        let sql = 'SELECT firstName, lastName, specialization FROM doctor WHERE 1=1'; 
+                                    
+                                        if (city) {
+                                            sql += ` AND city = '${city}'`;
+                                        }
+                                    
+                                        if (state) {
+                                            sql += ` AND state = '${state}'`;
+                                        }
+                                    
+                                        if (specialization) {
+                                            sql += ` AND specialization = '${specialization}'`;
+                                        }
+                                    
+                                        if (Experience) {
+                                            switch (Experience) {
+                                            case '0-5':
+                                                sql += ' AND Experience >= 0 AND Experience <= 5';
+                                                break;
+                                            case '5-10':
+                                                sql += ' AND Experience > 5 AND Experience <= 10';
+                                                break;
+                                            case '10-100':
+                                                sql += ' AND Experience >= 10';
+                                                break;
+                                            default:
+                                                break;
+                                            }
+                                        }
+                                    
+                                        con.query(sql, (error, result) => {
+                                            if (error) {
+                                            res.status(500).json({
+                                                success: false,
+                                                error: 'Error while searching for Doctors',
+                                            });
+                                            } else {
+                                            
+                                            const formattedResult = result.map((doctor) => ({
+                                                firstName: doctor.firstName,
+                                                lastName: doctor.lastName,
+                                                specialization: doctor.specialization,
+                                               
+                                            }));
+                                    
+                                            res.status(200).json({
+                                                success: true,
+                                                message: 'Doctors',
+                                                Doctors: formattedResult,
+                                            });
+                                            }
+                                        });
+                                        } catch (error) {
+                                        console.error(error);
+                                        res.status(500).json({
+                                            success: false,
+                                            error: 'There is an error',
+                                        });
+                                        }
+                                    };
+                    
+                
+            // API for see Doctor Details 
+                                      const seeDoctorDetails = async(req , res) =>{
+                                        try {
+                                            const doctorId = req.params.doctorId
+                                            const sql = ` SELECT firstName , lastName , Gender , specialization , 
+                                                 Experience , Email , Phone_no , profileImage , Address , 
+                                                 city , state  FROM doctor WHERE doctorId = ${doctorId}  `                                            
+                                            con.query(sql , (error , result)=>{
+                                                if(error)
+                                                {
+                                                    res.status(500).json({
+                                                        success : false ,
+                                                         error : 'Error while getting doctor details'
+                                                    })
+                                                }
+                                                else
+                                                {
+                                                    if(result.length === 0)
+                                                    {
+                                                        res.status(400).json({
+                                                                     success : false,
+                                                                     error : 'Invalid Doctor Id'
+                                                        })
+                                                    }
+                                                    else
+                                                    {
+                                                        res.status(200).json({
+                                                              success : true ,
+                                                              message : 'Doctor Details ',
+                                                              DoctorDetails : result
+                                                        })
+                                                    }
+                                                }
+                                            })
+
+                                        } catch (error) {
+                                            res.status(500).json({
+                                                success : false,
+                                                error : ' there is an error'
+                                            })
+                                        }
+                                      }
+      
+                                
+            
           
           
                  module.exports = {
                     register_patient , all_Patient , getPatient , login , patientChangePass,
-                    forgetPassToken , reset_Password
+                    forgetPassToken , reset_Password , searchDoctor , seeDoctorDetails
                      
                  }

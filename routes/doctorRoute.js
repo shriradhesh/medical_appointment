@@ -9,6 +9,12 @@ const upload = require('../uploadImages')
  // API for Doctor login
                        router.post('/loginDoctor', doctorController.loginDoctor)
 
+// API for Doctor profile Update
+                       router.post('/doctor_updateProfile/:doctorId',upload.single('profileImage'), doctorController.doctor_updateProfile)
+
+// API for Doctor change password
+                       router.post('/DoctorChangepass', doctorController.DoctorChangepass)
+
 
 
 

@@ -109,7 +109,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                               
                                                              
                                                         }
-                                                               // find patient by Email
+                                                               // find admin by Email
                                                         const sql = 'SELECT * FROM admin WHERE email = ?'
                                                         con.query(sql , [email] , async (error , result)=>{
                                                             if(error){
@@ -374,157 +374,161 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
         // API for Add Doctor
               
 
-                                            const AddDoctor = async (req, res) => {
-                                                try {
-                                                    const {
-                                                        firstName,
-                                                        lastName,
-                                                        Gender,
-                                                        DOB,
-                                                        specialization,
-                                                        licenseNumber,
-                                                        Email,
-                                                        password,
-                                                        Phone_no,
-                                                        Address,
-                                                        city,
-                                                        state,
-                                                        status
-                                                    } = req.body;
-                                            
-                                                    const requiredFields = [
-                                                        'firstName',
-                                                        'lastName',
-                                                        'Gender',
-                                                        'DOB',
-                                                        'specialization',
-                                                        'licenseNumber',
-                                                        'Email',
-                                                        'password',
-                                                        'Phone_no',
-                                                        'Address',
-                                                        'city',
-                                                        'state',
-                                                        'status'
-                                                    ];
-                                            
-                                                    for (const field of requiredFields) {
-                                                        if (!req.body[field]) {
-                                                            return res.status(400).json({
-                                                                success: false,
-                                                                error: `Missing ${field.replace('_', ' ')} field`
-                                                            });
-                                                        }
+                                const AddDoctor = async (req, res) => {
+                                    try {
+                                        const {
+                                            firstName,
+                                            lastName,
+                                            Gender,
+                                            DOB,
+                                            specialization,
+                                            Experience ,
+                                            licenseNumber,
+                                            Email,
+                                            password,
+                                            Phone_no,
+                                            Address,
+                                            city,
+                                            state,
+                                            status
+                                        } = req.body;
+                                
+                                        const requiredFields = [
+                                            'firstName',
+                                            'lastName',
+                                            'Gender',
+                                            'DOB',
+                                            'specialization',
+                                            'Experience',
+                                            'licenseNumber',
+                                            'Email',
+                                            'password',
+                                            'Phone_no',
+                                            'Address',
+                                            'city',
+                                            'state',
+                                            'status'
+                                        ];
+                                
+                                        for (const field of requiredFields) {
+                                            if (!req.body[field]) {
+                                                return res.status(400).json({
+                                                    success: false,
+                                                    error: `Missing ${field.replace('_', ' ')} field`
+                                                });
+                                            }
+                                        }
+                                
+                                        const hashedPassword = await bcrypt.hash(password, 10);
+                                
+                                        const imagePath = req.file.path;
+                                        // check for LicenseNumber existance
+
+                                        const licenseCheckQuery = 'SELECT COUNT (*) AS licenseCount FROM doctor WHERE licenseNumber = ?'
+                                        con.query(licenseCheckQuery ,[licenseNumber] , (error , result)=>{
+                                            if(error)
+                                            {
+                                                return res.status(500).json({
+                                                            success : false ,
+                                                            error : 'Database error for license Number'
+                                                })
+                                            }
+                                            const licenseNumberCount = result[0].licenseNumberCount
+                                            if(licenseNumberCount > 0)
+                                            {
+                                                return res.status(400).json({
+                                                    success : true ,
+                                                    error : 'license Number Already exists'
+                                                })
+                                            }
+                                        })
+
+                                
+                                        // check for Email existence
+                                
+                                        const emailCheckQuery = 'SELECT COUNT(*) AS emailCount FROM doctor WHERE Email = ?';
+                                        con.query(emailCheckQuery, [Email], (error, results) => {
+                                            if (error) {
+                                                return res.status(500).json({
+                                                    success: false,
+                                                    error: 'Database error for email'
+                                                });
+                                            }
+                                
+                                            const emailCount = results[0].emailCount;
+                                
+                                            if (emailCount > 0) {
+                                                return res.status(400).json({
+                                                    success: false,
+                                                    error: 'Email Already Exists'
+                                                });
+                                            }                                         
+                                        
+                                            const sql = `INSERT INTO doctor (firstName, lastName, Gender, DOB, specialization, Experience ,
+                                                licenseNumber, Email, password, Phone_no, profileImage, Address,city , state , status)
+                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                                
+                                            con.query(
+                                                sql,
+                                                [
+                                                    firstName,
+                                                    lastName,
+                                                    Gender,
+                                                    DOB,
+                                                    specialization,
+                                                    Experience,
+                                                    licenseNumber,
+                                                    Email,
+                                                    hashedPassword,
+                                                    Phone_no,
+                                                    imagePath,
+                                                    Address,
+                                                    city,
+                                                    state,
+                                                    status
+                                                ],
+                                                (error, result) => {
+                                                    if (error) {
+                                                        res.status(500).json({
+                                                            success: false,
+                                                            error: 'There is an error adding the Doctor'
+                                                        });
+                                                    } else {
+                                                        const insertedDoctor = {
+                                                            firstName,
+                                                            lastName,
+                                                            Gender,
+                                                            DOB,
+                                                            specialization,
+                                                            Experience,
+                                                            licenseNumber,
+                                                            Email,
+                                                            Phone_no,
+                                                            profileImage: imagePath,
+                                                            Address,
+                                                            city,
+                                                            state,
+                                                            status,
+                                                            doctorId: result.insertId
+                                                        };
+                                
+                                                        res.status(200).json({
+                                                            success: true,
+                                                            message: 'Doctor Added successfully',
+                                                            doctor: insertedDoctor
+                                                        });
                                                     }
-                                            
-                                                    const hashedPassword = await bcrypt.hash(password, 10);
-                                            
-                                                    const imagePath = req.file.path;
-                                                    // check for LicenseNumber existance
-
-                                                    const licenseCheckQuery = 'SELECT COUNT (*) AS licenseCount FROM doctor WHERE licenseNumber = ?'
-                                                    con.query(licenseCheckQuery ,[licenseNumber] , (error , result)=>{
-                                                        if(error)
-                                                        {
-                                                            return res.status(500).json({
-                                                                         success : false ,
-                                                                        error : 'Database error for license Number'
-                                                            })
-                                                        }
-                                                         const licenseNumberCount = result[0].licenseNumberCount
-                                                         if(licenseNumberCount > 0)
-                                                         {
-                                                            return res.status(400).json({
-                                                                success : true ,
-                                                                error : 'license Number Already exists'
-                                                            })
-                                                         }
-                                                    })
-
-                                            
-                                                    // check for Email existence
-                                            
-                                                    const emailCheckQuery = 'SELECT COUNT(*) AS emailCount FROM doctor WHERE Email = ?';
-                                                    con.query(emailCheckQuery, [Email], (error, results) => {
-                                                        if (error) {
-                                                            return res.status(500).json({
-                                                                success: false,
-                                                                error: 'Database error for email'
-                                                            });
-                                                        }
-                                            
-                                                        const emailCount = results[0].emailCount;
-                                            
-                                                        if (emailCount > 0) {
-                                                            return res.status(400).json({
-                                                                success: false,
-                                                                error: 'Email Already Exists'
-                                                            });
-                                                        }                                         
-                                                    
-                                                        const sql = `INSERT INTO doctor (firstName, lastName, Gender, DOB, specialization, 
-                                                            licenseNumber, Email, password, Phone_no, profileImage, Address,city , state , status)
-                                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-                                            
-                                                        con.query(
-                                                            sql,
-                                                            [
-                                                                firstName,
-                                                                lastName,
-                                                                Gender,
-                                                                DOB,
-                                                                specialization,
-                                                                licenseNumber,
-                                                                Email,
-                                                                hashedPassword,
-                                                                Phone_no,
-                                                                imagePath,
-                                                                Address,
-                                                                city,
-                                                                state,
-                                                                status
-                                                            ],
-                                                            (error, result) => {
-                                                                if (error) {
-                                                                    res.status(500).json({
-                                                                        success: false,
-                                                                        error: 'There is an error adding the Doctor'
-                                                                    });
-                                                                } else {
-                                                                    const insertedDoctor = {
-                                                                        firstName,
-                                                                        lastName,
-                                                                        Gender,
-                                                                        DOB,
-                                                                        specialization,
-                                                                        licenseNumber,
-                                                                        Email,
-                                                                        Phone_no,
-                                                                        profileImage: imagePath,
-                                                                        Address,
-                                                                        city,
-                                                                        state,
-                                                                        status,
-                                                                        doctorId: result.insertId
-                                                                    };
-                                            
-                                                                    res.status(200).json({
-                                                                        success: true,
-                                                                        message: 'Doctor Added successfully',
-                                                                        doctor: insertedDoctor
-                                                                    });
-                                                                }
-                                                            }
-                                                        );
-                                                    });
-                                                } catch (error) {
-                                                    console.error(error);
-                                                    res.status(500).json({
-                                                        success: false,
-                                                        error: 'There is an error'
-                                                    });
                                                 }
-                                            };
+                                            );
+                                        });
+                                    } catch (error) {
+                                        console.error(error);
+                                        res.status(500).json({
+                                            success: false,
+                                            error: 'There is an error'
+                                        });
+                                    }
+                                };
 
             // get all doctor
                               
@@ -601,6 +605,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                             Gender: newData.Gender,
                                                             DOB: newData.DOB,
                                                             specialization: newData.specialization,
+                                                            Experience : newData.Experience,
                                                             Phone_no: newData.Phone_no,
                                                             Address: newData.Address,
                                                             city : newData.city,

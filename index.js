@@ -5,16 +5,20 @@ const patientRoute = require('./routes/patientsRoute')
 const doctorRoute = require('./routes/doctorRoute')
 const AdminRoute = require('./routes/adminRoute')
 const port = process.env.PORT || 5001;
+const path = require('path')
+const bodyParser = require('body-parser')
+const cors = require('cors')
 
 
                            // Database connection
 var con = require('./config/db')
-const bodyParser = require('body-parser')
+
 
 
                             // Middleware
  app.use(express.json())
 app.use(bodyParser.json())
+app.use(cors())
 app.use(bodyParser.urlencoded({extended : true}))
 app.use( express.static('uploads'));
 

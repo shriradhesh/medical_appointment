@@ -21,6 +21,10 @@ const upload = require('../uploadImages')
                     router.post('/forgetPassToken', patientController.forgetPassToken)
                     // reset password using token 
                     router.post('/reset_Password/:patientId/:tokenValue', patientController.reset_Password)
+//API for search Doctors
+                   router.post('/searchDoctor', patientController.searchDoctor)
+// API for see Doctor Details
+                   router.post('/seeDoctorDetails/:doctorId', patientController.seeDoctorDetails )
 
 
 

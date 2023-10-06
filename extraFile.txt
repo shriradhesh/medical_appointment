@@ -5,62 +5,40 @@ CREATE TABLE `medical_appoinment`.`patient` (`id` INT(20) NOT NULL AUTO_INCREMEN
 
 
 
-	const updateBus = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const {
-      bus_type,
-      seating_capacity,
-      model,
-      manufacture_year,
-      amenities,
-      status,
-      availability,
-    } = req.body;
+	const searchDoctors = (req, res) => {
+  // Extract query parameters from the request
+  const { city, state, specialization, experience } = req.query;
 
-    const existBusQuery = 'SELECT * FROM buses WHERE id = ?';
-    const [rows] = await pool.execute(existBusQuery, [id]);
+  // Build the SQL query dynamically based on the provided filters
+  let sql = 'SELECT * FROM doctor WHERE 1=1'; // Always true condition to start the query
 
-    if (rows.length === 0) {
-      return res.status(400).json({ error: 'Bus Not found', success: false });
-    }
-
-    const validStatus = ['active', 'inactive'];
-    const validAvailability = ['available', 'unavailable', 'booked'];
-
-    // Check if the provided status and availability are valid, otherwise use default values
-    const driverStatus = validStatus.includes(status) ? status : 'active';
-    const busAvailability = validAvailability.includes(availability) ? availability : 'available';
-
-    const updateBusQuery = `
-      UPDATE buses
-      SET bus_type = ?, seating_capacity = ?, model = ?, manufacture_year = ?,
-          amenities = ?, status = ?, availability = ?
-      WHERE id = ?
-    `;
-
-    await pool.execute(updateBusQuery, [
-      bus_type,
-      seating_capacity,
-      model,
-      manufacture_year,
-      amenities,
-      driverStatus,
-      busAvailability,
-      id,
-    ]);
-
-    if (req.file) {
-      // Handle file upload and update in the database as needed
-      const filePath = req.file.path;
-
-      // You may need to implement code to update the file path in the database
-      // and handle file deletion if necessary
-    }
-
-    res.status(200).json({ success: true, message: 'Bus Details Edited Successfully' });
-  } catch (error) {
-    console.error('Error while editing the bus details:', error);
-    res.status(500).json({ success: false, error: 'Error while editing the bus details' });
+  if (city) {
+    sql += ` AND city = '${city}'`;
   }
+
+  if (state) {
+    sql += ` AND state = '${state}'`;
+  }
+
+  if (specialization) {
+    sql += ` AND specialization = '${specialization}'`;
+  }
+
+  if (experience) {
+    sql += ` AND experience >= ${experience}`;
+  }
+
+  con.query(sql, (err, result) => {
+    if (err) {
+      res.status(500).json({ err: 'Error while searching for doctors', error: err });
+    } else {
+      res.status(200).json({ success: true, message: 'Doctors matching the criteria', doctors: result });
+    }
+  });
 };
+
+// Define the route for searching doctors with filters
+app.get('/search-doctors', searchDoctors);
+
+
+
