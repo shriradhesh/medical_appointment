@@ -393,31 +393,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             status
                                         } = req.body;
                                 
-                                        const requiredFields = [
-                                            'firstName',
-                                            'lastName',
-                                            'Gender',
-                                            'DOB',
-                                            'specialization',
-                                            'Experience',
-                                            'licenseNumber',
-                                            'Email',
-                                            'password',
-                                            'Phone_no',
-                                            'Address',
-                                            'city',
-                                            'state',
-                                            'status'
-                                        ];
-                                
-                                        for (const field of requiredFields) {
-                                            if (!req.body[field]) {
-                                                return res.status(400).json({
-                                                    success: false,
-                                                    error: `Missing ${field.replace('_', ' ')} field`
-                                                });
-                                            }
-                                        }
+                                      
                                 
                                         const hashedPassword = await bcrypt.hash(password, 10);
                                 

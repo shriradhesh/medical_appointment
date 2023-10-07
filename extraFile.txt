@@ -5,40 +5,113 @@ CREATE TABLE `medical_appoinment`.`patient` (`id` INT(20) NOT NULL AUTO_INCREMEN
 
 
 
-	const searchDoctors = (req, res) => {
-  // Extract query parameters from the request
-  const { city, state, specialization, experience } = req.query;
+	const express = require('express');
+const QRCode = require('qrcode');
+const fs = require('fs');
 
-  // Build the SQL query dynamically based on the provided filters
-  let sql = 'SELECT * FROM doctor WHERE 1=1'; // Always true condition to start the query
+const app = express();
+app.use(express.json());
 
-  if (city) {
-    sql += ` AND city = '${city}'`;
+// Endpoint to generate an appointment number with a QR code
+app.post('/generate-appointment-qrcode', async (req, res) => {
+  try {
+    const { appointmentNumber } = req.body;
+
+    // Generate QR code
+    const qrCodeDataURL = await QRCode.toDataURL(appointmentNumber);
+
+    // Save the QR code image (optional)
+    const qrCodeImageFilename = `${appointmentNumber}.png`;
+    await QRCode.toFile(qrCodeImageFilename, appointmentNumber);
+
+    // Return the QR code data and optionally the image filename
+    res.status(200).json({
+      success: true,
+      message: 'Appointment QR code generated successfully',
+      qrCodeDataURL,
+      qrCodeImageFilename,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error while generating appointment QR code',
+    });
   }
+});
 
-  if (state) {
-    sql += ` AND state = '${state}'`;
-  }
+// Start the Express server
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
 
-  if (specialization) {
-    sql += ` AND specialization = '${specialization}'`;
-  }
 
-  if (experience) {
-    sql += ` AND experience >= ${experience}`;
-  }
 
-  con.query(sql, (err, result) => {
-    if (err) {
-      res.status(500).json({ err: 'Error while searching for doctors', error: err });
-    } else {
-      res.status(200).json({ success: true, message: 'Doctors matching the criteria', doctors: result });
+
+   ....
+get apoointments
+    ...
+
+
+const express = require('express');
+const router = express.Router();
+
+// Assuming you have already defined a MySQL connection named 'con'
+
+// API to get all appointments for a doctor with date range filtering
+router.get('/appointments/:doctorId', async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+
+    // Get the date range filter from the query parameter
+    const dateRange = req.query.range;
+
+    // Define the date filter based on the date range
+    let dateFilter = '';
+
+    switch (dateRange) {
+      case 'week':
+        const oneWeekAgo = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+        dateFilter = `Appointment_Date >= '${oneWeekAgo.toISOString().slice(0, 10)}'`;
+        break;
+      case 'day':
+        dateFilter = `Appointment_Date = '${currentDate.toISOString().slice(0, 10)}'`;
+        break;
+      case 'month':
+        const oneMonthAgo = new Date(currentDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+        dateFilter = `Appointment_Date >= '${oneMonthAgo.toISOString().slice(0, 10)}'`;
+        break;
+      default:
+        break;
     }
-  });
-};
 
-// Define the route for searching doctors with filters
-app.get('/search-doctors', searchDoctors);
+    // Build the SQL query based on the doctorId and date filter
+    const query = `
+      SELECT * FROM appointments
+      WHERE doctorId = ? ${dateFilter ? `AND ${dateFilter}` : ''}
+    `;
 
+    con.query(query, [doctorId], (error, results) => {
+      if (error) {
+        console.error(error);
+        res.status(500).json({
+          success: false,
+          error: 'Error while fetching appointments',
+        });
+      } else {
+        res.status(200).json({
+          success: true,
+          appointments: results,
+        });
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      error: 'There is an error',
+    });
+  }
+});
 
-
+module.exports = router;

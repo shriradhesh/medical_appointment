@@ -19,9 +19,8 @@ const upload = require('../uploadImages')
                                                         Address,
                                                         Email,
                                                         Password,
-                                                        Phone_no,
-                                                        Emergency_Contact,
-                                                        Relationship_to_Patient
+                                                        Phone_no
+                                                        
                                                     } = req.body;
 
                                                     const emailCheck = 'SELECT COUNT(*) AS count FROM patient WHERE Email = ? ';
@@ -37,8 +36,8 @@ const upload = require('../uploadImages')
                                                                         console.error('Error hashing Password', Error);
                                                                         res.status(500).json({ success: false, Error: 'Error hashing Password' });
                                                                     } else {
-                                                                        const sql = 'INSERT INTO patient (FirstName, LastName, DOB, Gender, Address, Email, Password, Phone_no, Emergency_Contact, Relationship_to_Patient) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                                                                        con.query(sql, [FirstName, LastName, DOB, Gender, Address, Email, hashedPassword, Phone_no, Emergency_Contact, Relationship_to_Patient], function (error, result) {
+                                                                        const sql = 'INSERT INTO patient (FirstName, LastName, DOB, Gender, Address, Email, Password, Phone_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+                                                                        con.query(sql, [FirstName, LastName, DOB, Gender, Address, Email, hashedPassword, Phone_no], function (error, result) {
                                                                             if (error) {
                                                                                 res.status(400).json({ success: false, Error: 'There is an error' });
                                                                             } else {
@@ -79,9 +78,9 @@ const upload = require('../uploadImages')
                                             }
             // Api to get Patient by ID
                                            const getPatient = async(req ,res) =>{
-                                            const patientId = req.params.id
+                                            const patientId = req.params.patientId
 
-                                            const sql = `SELECT * FROM patient WHERE id = ${patientId}`
+                                            const sql = `SELECT * FROM patient WHERE patientId = ${patientId}`
                                             con.query(sql , (error , result)=>{
                                                 if(error){
                                                     res.status(500).json({ success : false,
@@ -163,7 +162,7 @@ const upload = require('../uploadImages')
                                                                 return res.status(400).json({ success : false ,
                                                                                               error : 'there is an error to find patient'})
                                                             }
-                                                            if(result.lenght === 0)
+                                                            if(result.length === 0)
                                                             {
                                                                 return res.status(400).json({
                                                                                        success : false ,
@@ -250,12 +249,12 @@ const upload = require('../uploadImages')
                                                     if (tokenResults.length === 0) {
                                                         token = crypto.randomBytes(32).toString('hex');
                                                         const insertTokenQuery = 'INSERT INTO tokenschema (patientId, token) VALUES (?, ?)';
-                                                        con.query(insertTokenQuery, [patient.id, token], (error) => {
+                                                        con.query(insertTokenQuery, [patient.patientId, token], (error) => {
                                                         if (error) {
                                                             return res.status(500).json({ success: false, error: 'An error occurred' });
                                                         }
                                             
-                                                        const resetLink = `${process.env.BASE_URL}/password-reset/${patient.id}/${token}`;
+                                                        const resetLink = `${process.env.BASE_URL}/password-reset/${patient.patientId}/${token}`;
                                                         sendEmails(patient.Email, 'Password Reset', resetLink);
                                             
                                                         res.status(200).json({
@@ -266,7 +265,7 @@ const upload = require('../uploadImages')
                                                     } else {
                                                         token = tokenResults[0].token;
                                             
-                                                        const resetLink = `${process.env.BASE_URL}/password-reset/${patient.id}/${token}`;
+                                                        const resetLink = `${process.env.BASE_URL}/password-reset/${patient.patientId}/${token}`;
                                                         sendEmails(patient.Email, 'Password Reset', resetLink);
                                             
                                                         res.status(200).json({
@@ -304,7 +303,7 @@ const upload = require('../uploadImages')
                                     }
                                 
                                     // Check if the patient exists based on ID
-                                    const patientQuery = 'SELECT * FROM patient WHERE id = ?';
+                                    const patientQuery = 'SELECT * FROM patient WHERE patientId = ?';
                                     con.query(patientQuery, [patientId], async (error, patientResults) => {
                                         if (error) {
                                         return res.status(500).json({ success: false, error: 'An error occurred' });
@@ -318,7 +317,7 @@ const upload = require('../uploadImages')
                                 
                                         // Check if a password reset token already exists for the patient
                                         const tokenQuery = 'SELECT * FROM tokenschema WHERE patientId = ? AND token = ?';
-                                        con.query(tokenQuery, [patient.id, tokenValue], async (error, tokenResults) => {
+                                        con.query(tokenQuery, [patient.patientId, tokenValue], async (error, tokenResults) => {
                                         if (error) {
                                             return res.status(500).json({ success: false, error: 'An error occurred' });
                                         }
@@ -334,7 +333,7 @@ const upload = require('../uploadImages')
                                         const hashedPassword = await bcrypt.hash(Password, 10);
                                 
                                         // Update the patient's password in the database
-                                        const updatePasswordQuery = 'UPDATE patient SET Password = ? WHERE Id = ?';
+                                        const updatePasswordQuery = 'UPDATE patient SET Password = ? WHERE patientId = ?';
                                         con.query(updatePasswordQuery, [hashedPassword, patient.id], async (error) => {
                                             if (error) {
                                             return res.status(500).json({ success: false, error: 'An error occurred' });
@@ -342,7 +341,7 @@ const upload = require('../uploadImages')
                                 
                                             // Delete the used token
                                             const deleteTokenQuery = 'DELETE FROM tokenschema WHERE patientId = ? AND token = ?';
-                                            con.query(deleteTokenQuery, [patient.id, tokenValue], async (error) => {
+                                            con.query(deleteTokenQuery, [patient.patientId, tokenValue], async (error) => {
                                             if (error) {
                                                 return res.status(500).json({ success: false, error: 'An error occurred' });
                                             }
@@ -426,7 +425,7 @@ const upload = require('../uploadImages')
                                     };
                     
                 
-            // API for see Doctor Details 
+  // API for see Doctor Details 
                                       const seeDoctorDetails = async(req , res) =>{
                                         try {
                                             const doctorId = req.params.doctorId
@@ -469,12 +468,80 @@ const upload = require('../uploadImages')
                                         }
                                       }
       
+        // create an API for Book Appointment 
+                                const Book_Appointment = async (req, res) => {
+                                    try {
+                                    const { patientId, doctorId, Appointment_Date, Appointment_StartTime,
+                                         Appointment_EndTime, Appointment_Type } = req.body;
                                 
-            
+                                    // Check if the appointment slot is available
+                                    const availabilitySql = `
+                                        SELECT * FROM appointments
+                                        WHERE doctorId = ? AND Appointment_Date = ? 
+                                        AND (
+                                        (Appointment_StartTime >= ? AND Appointment_StartTime < ?)
+                                        OR (Appointment_EndTime > ? AND Appointment_EndTime <= ?)
+                                        )
+                                    `;
+                                
+                                    const availabilityValues = [doctorId, Appointment_Date, Appointment_StartTime, 
+                                           Appointment_EndTime, Appointment_StartTime, Appointment_EndTime];
+                                
+                                    con.query(availabilitySql, availabilityValues, (error, results) => {
+                                        if (error) {
+                                        res.status(500).json({
+                                            success: false,
+                                            error: 'Error while checking appointment availability',
+                                        });
+                                        return;
+                                        }
+                                
+                                        if (results.length > 0) {
+                                        res.status(400).json({
+                                            success: false,
+                                            error: 'Appointment slot is not available',
+                                        });
+                                        return;
+                                        }
+                                
+                                        // If the slot is available, insert the appointment record
+                                        const insertSql = `
+                                        INSERT INTO appointments (patientId, doctorId, Appointment_Date,
+                                               Appointment_StartTime, Appointment_EndTime, Appointment_Type, Appointment_Status)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                                        `;
+                                
+                                        const insertValues = [patientId, doctorId, Appointment_Date,
+                                               Appointment_StartTime, Appointment_EndTime, Appointment_Type, 'Booked'];
+                                
+                                        con.query(insertSql, insertValues, (error, result) => {
+                                        if (error) {
+                                            res.status(500).json({
+                                            success: false,
+                                            error: 'Error while booking appointment',
+                                            });
+                                            return;
+                                        }
+                                
+                                        res.status(200).json({
+                                            success: true,
+                                            message: 'Appointment booked successfully',
+                                        });
+                                        });
+                                    });
+                                    } catch (error) {
+                                    res.status(500).json({
+                                        success: false,
+                                        error: 'There is an error',
+                                    });
+                                    }
+                                };
+                                
+    
           
           
                  module.exports = {
                     register_patient , all_Patient , getPatient , login , patientChangePass,
-                    forgetPassToken , reset_Password , searchDoctor , seeDoctorDetails
+                    forgetPassToken , reset_Password , searchDoctor , seeDoctorDetails , Book_Appointment
                      
                  }

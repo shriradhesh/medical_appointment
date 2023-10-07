@@ -9,7 +9,7 @@ const upload = require('../uploadImages')
 // Api for get all_Patient
                      router.get('/all_Patient', patientController.all_Patient)
 // API for get patient by ID
-                     router.get('/getPatient/:id', patientController.getPatient)
+                     router.get('/getPatient/:patientId', patientController.getPatient)
 // API for patient login
                      router.post('/login', patientController.login)
 // API for change password
@@ -25,6 +25,8 @@ const upload = require('../uploadImages')
                    router.post('/searchDoctor', patientController.searchDoctor)
 // API for see Doctor Details
                    router.post('/seeDoctorDetails/:doctorId', patientController.seeDoctorDetails )
+// API for Book Appointment
+                   router.post('/Book_Appointment', patientController.Book_Appointment)
 
 
 

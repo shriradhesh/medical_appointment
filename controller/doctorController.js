@@ -157,8 +157,8 @@ const { error } = require('console');
                                             
                                                         // Update the doctor's password in the database
                                                         const updateSql = 'UPDATE doctor SET password = ? WHERE Email = ?';
-                                                        con.query(updateSql, [hashedNewPassword, Email], (updateError) => {
-                                                            if (updateError) {
+                                                        con.query(updateSql, [hashedNewPassword, Email], (Error) => {
+                                                            if (Error) {
                                                                 return res.status(500).json({
                                                                     success: false,
                                                                     error: 'Internal server error',
@@ -178,7 +178,10 @@ const { error } = require('console');
                                                 }
                                             };
                                             
+                                                   // Manage Appointment
 
+                // API for get all Appointments by doctorId
+                
 
 
         module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass }
