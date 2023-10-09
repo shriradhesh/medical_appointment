@@ -14,6 +14,8 @@ const upload = require('../uploadImages')
 
 // API for Doctor change password
                        router.post('/DoctorChangepass', doctorController.DoctorChangepass)
+// API for Doctor for see Appointments
+                       router.get('/seeAppointments/:doctorId', doctorController.seeAppointments)
 
 
 

@@ -3,6 +3,9 @@ const bcrypt = require('bcrypt')
 const crypto = require('crypto');
 const sendEmails = require('../utils/forgetpass_sentEmail')
 const upload = require('../uploadImages')
+const qr = require('qr-image'); 
+const QRCode = require ('qrcode')
+const fs = require('fs'); 
 
 
 
@@ -363,7 +366,7 @@ const upload = require('../uploadImages')
                                         try {
                                         let { city, state, specialization, Experience } = req.query;
                                     
-                                        let sql = 'SELECT firstName, lastName, specialization FROM doctor WHERE 1=1'; 
+                                        let sql = 'SELECT firstName, lastName, specialization , doctorId FROM doctor WHERE 1=1'; 
                                     
                                         if (city) {
                                             sql += ` AND city = '${city}'`;
@@ -405,6 +408,7 @@ const upload = require('../uploadImages')
                                                 firstName: doctor.firstName,
                                                 lastName: doctor.lastName,
                                                 specialization: doctor.specialization,
+                                                doctorId : doctor.doctorId
                                                
                                             }));
                                     
@@ -469,76 +473,124 @@ const upload = require('../uploadImages')
                                       }
       
         // create an API for Book Appointment 
-                                const Book_Appointment = async (req, res) => {
-                                    try {
-                                    const { patientId, doctorId, Appointment_Date, Appointment_StartTime,
-                                         Appointment_EndTime, Appointment_Type } = req.body;
-                                
-                                    // Check if the appointment slot is available
-                                    const availabilitySql = `
-                                        SELECT * FROM appointments
-                                        WHERE doctorId = ? AND Appointment_Date = ? 
-                                        AND (
-                                        (Appointment_StartTime >= ? AND Appointment_StartTime < ?)
-                                        OR (Appointment_EndTime > ? AND Appointment_EndTime <= ?)
-                                        )
-                                    `;
-                                
-                                    const availabilityValues = [doctorId, Appointment_Date, Appointment_StartTime, 
-                                           Appointment_EndTime, Appointment_StartTime, Appointment_EndTime];
-                                
-                                    con.query(availabilitySql, availabilityValues, (error, results) => {
-                                        if (error) {
-                                        res.status(500).json({
-                                            success: false,
-                                            error: 'Error while checking appointment availability',
-                                        });
-                                        return;
-                                        }
-                                
-                                        if (results.length > 0) {
-                                        res.status(400).json({
-                                            success: false,
-                                            error: 'Appointment slot is not available',
-                                        });
-                                        return;
-                                        }
-                                
-                                        // If the slot is available, insert the appointment record
-                                        const insertSql = `
-                                        INSERT INTO appointments (patientId, doctorId, Appointment_Date,
-                                               Appointment_StartTime, Appointment_EndTime, Appointment_Type, Appointment_Status)
-                                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                                        `;
-                                
-                                        const insertValues = [patientId, doctorId, Appointment_Date,
-                                               Appointment_StartTime, Appointment_EndTime, Appointment_Type, 'Booked'];
-                                
-                                        con.query(insertSql, insertValues, (error, result) => {
-                                        if (error) {
-                                            res.status(500).json({
-                                            success: false,
-                                            error: 'Error while booking appointment',
-                                            });
-                                            return;
-                                        }
-                                
-                                        res.status(200).json({
-                                            success: true,
-                                            message: 'Appointment booked successfully',
-                                        });
-                                        });
-                                    });
-                                    } catch (error) {
-                                    res.status(500).json({
-                                        success: false,
-                                        error: 'There is an error',
-                                    });
-                                    }
-                                };
-                                
-    
+        const Book_Appointment = async (req, res) => {
+            try {
+              const { patientId, doctorId, Appointment_Date, Appointment_StartTime, Appointment_EndTime, Appointment_Type } = req.body;
           
+              // Check if the appointment slot is available
+              const availabilitySql = `
+                SELECT *
+                FROM appointments
+                WHERE doctorId = ? 
+                AND Appointment_Date = ?
+                AND (
+                  (Appointment_StartTime < ? AND Appointment_EndTime > ?)
+                  OR (Appointment_StartTime >= ? AND Appointment_StartTime < ?)
+                  OR (Appointment_EndTime > ? AND Appointment_EndTime <= ?)
+                )
+              `;
+          
+              const availabilityValues = [
+                doctorId,
+                Appointment_Date,
+                Appointment_EndTime,
+                Appointment_StartTime,
+                Appointment_StartTime,
+                Appointment_EndTime,
+                Appointment_StartTime,
+                Appointment_EndTime,
+              ];
+          
+              con.query(availabilitySql, availabilityValues, async (error, results) => {
+                if (error) {
+                  console.error('Error checking appointment availability:', error);
+                  res.status(500).json({ success: false, error: 'Error while checking appointment availability' });
+                  return;
+                }
+          
+                if (results.length === 0) {
+                  console.log('Conflict detected'); 
+                  res.status(400).json({ success: false, error: 'Appointment slot is not available' });
+                  return;
+                }
+          
+                // If the slot is available, generate a QR code link
+                const appointmentNumber = generateUniqueAppointmentNumber();
+                const qrCodeLink = `http://localhost:5000/?appointment_number=${appointmentNumber}`;
+                const qrCodeFilename = `/${appointmentNumber}.png`;
+          
+                // Generate and save the QR code
+                await generateQRCode(qrCodeLink, qrCodeFilename);
+          
+                // Insert the appointment record with QR code link and appointment number
+                const insertSql = `
+                  INSERT INTO appointments (patientId, doctorId, Appointment_Date,
+                    Appointment_StartTime, Appointment_EndTime, Appointment_Type, Appointment_Status, QR_Code_Link, Appointment_Number)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+          
+                const insertValues = [
+                  patientId,
+                  doctorId,
+                  Appointment_Date,
+                  Appointment_StartTime,
+                  Appointment_EndTime,
+                  Appointment_Type,
+                  'Booked',
+                  qrCodeLink,
+                  appointmentNumber,
+                ];
+          
+                con.query(insertSql, insertValues, (error, result) => {
+                  if (error) {
+                    console.error('Error booking appointment:', error);
+                    res.status(500).json({ success: false, error: 'Error while booking appointment' });
+                    return;
+                  }
+                  const qrCodeImage = fs.readFileSync(qrCodeFilename);
+                  res.status(200).json({
+                    success: true,
+                    message: 'Appointment booked successfully',
+                    qrCodeLink,
+                    appointmentNumber,
+                    qrCodeImage: qrCodeImage.toString('base64')
+                  });
+                });
+              });
+            } catch (error) {
+              console.error('Error in booking appointment:', error);
+              res.status(500).json({ success: false, error: 'There is an error' });
+            }
+          }
+          
+          // Function to generate a unique appointment number
+          function generateUniqueAppointmentNumber() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let appointmentNumber = '';
+            const length = 8;
+          
+            for (let i = 0; i < length; i++) {
+              const randomIndex = Math.floor(Math.random() * characters.length);
+              appointmentNumber += characters.charAt(randomIndex);
+            }
+          
+            return appointmentNumber;
+          }
+          
+          // Function to generate and save QR code
+          async function generateQRCode(data, filename) {
+            try {
+              const qrCode = qr.image(data, { type: 'png' });
+              qrCode.pipe(fs.createWriteStream(filename));
+              console.log(`QR code saved to ${filename}`);
+            } catch (error) {
+              throw error;
+            }
+          }
+          
+                                        
+                                
+                                        
           
                  module.exports = {
                     register_patient , all_Patient , getPatient , login , patientChangePass,

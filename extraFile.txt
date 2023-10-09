@@ -56,62 +56,68 @@ get apoointments
 const express = require('express');
 const router = express.Router();
 
-// Assuming you have already defined a MySQL connection named 'con'
-
-// API to get all appointments for a doctor with date range filtering
-router.get('/appointments/:doctorId', async (req, res) => {
+const seeAppointments = async (req, res) => {
   try {
     const doctorId = req.params.doctorId;
 
-    // Get the date range filter from the query parameter
-    const dateRange = req.query.range;
+    // Check if the dateRange query parameter is provided
+    const dateRange = req.query.dateRange;
 
-    // Define the date filter based on the date range
     let dateFilter = '';
+    let startDate, endDate;
 
     switch (dateRange) {
       case 'week':
-        const oneWeekAgo = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-        dateFilter = `Appointment_Date >= '${oneWeekAgo.toISOString().slice(0, 10)}'`;
+        startDate = new Date();
+        endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
         break;
+
       case 'day':
-        dateFilter = `Appointment_Date = '${currentDate.toISOString().slice(0, 10)}'`;
+        startDate = new Date();
+        endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
         break;
+
       case 'month':
-        const oneMonthAgo = new Date(currentDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-        dateFilter = `Appointment_Date >= '${oneMonthAgo.toISOString().slice(0, 10)}'`;
+        startDate = new Date();
+        endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
         break;
+
       default:
         break;
     }
 
-    // Build the SQL query based on the doctorId and date filter
+    if (startDate && endDate) {
+      dateFilter = `A.Appointment_Date >= '${startDate.toISOString().slice(0, 10)}' AND A.Appointment_Date < '${endDate.toISOString().slice(0, 10)}'`;
+    }
+
     const query = `
-      SELECT * FROM appointments
-      WHERE doctorId = ? ${dateFilter ? `AND ${dateFilter}` : ''}
+      SELECT A.*, P.*
+      FROM appointments AS A
+      INNER JOIN patient AS P ON A.patientId = P.patientId
+      WHERE A.doctorId = ? ${dateFilter}
     `;
 
-    con.query(query, [doctorId], (error, results) => {
+    con.query(query, [doctorId], (error, result) => {
       if (error) {
-        console.error(error);
+        console.error('Error while executing SQL query:', error);
         res.status(500).json({
           success: false,
-          error: 'Error while fetching appointments',
+          error: 'Error While fetching Appointment',
         });
       } else {
         res.status(200).json({
           success: true,
-          appointments: results,
+          message: 'Filtered Appointment Details',
+          Appointment_Details: result,
         });
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error:', error);
     res.status(500).json({
       success: false,
       error: 'There is an error',
     });
   }
-});
+};
 
-module.exports = router;

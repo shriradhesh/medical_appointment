@@ -179,9 +179,98 @@ const { error } = require('console');
                                             };
                                             
                                                    // Manage Appointment
+// API for see Appointments 
+                                                        const seeAppointments = async (req, res) => {
+                                                            try {
+                                                                const doctorId = req.params.doctorId;
+                                                                const startDateParam = req.query.startDateParam;
+                                                                const endDateParam = req.query.endDateParam;
 
-                // API for get all Appointments by doctorId
-                
+                                                                let startDate, endDate;
+
+                                                                if (startDateParam && endDateParam) {
+                                                                    startDate = new Date(startDateParam);
+                                                                    endDate = new Date(endDateParam);
+
+                                                                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                                                                        res.status(400).json({
+                                                                            success: false,
+                                                                            error: 'Invalid date format. Use YYYY-MM-DD.',
+                                                                        });
+                                                                        return;
+                                                                    }
+                                                                } else {
+                                                                    startDate = null;
+                                                                    endDate = null;
+                                                                }
+
+                                                                let query = `
+                                                                    SELECT A.*, P.*
+                                                                    FROM appointments AS A
+                                                                    INNER JOIN patient AS P ON A.patientId = P.patientId
+                                                                    WHERE A.doctorId = ?
+                                                                `;
+
+                                                                const queryParams = [doctorId];
+
+                                                                if (startDate && endDate) {
+                                                                    query += `
+                                                                        AND A.Appointment_Date >= ?
+                                                                        AND A.Appointment_Date <= ?
+                                                                    `;
+                                                                    queryParams.push(startDate.toISOString());
+                                                                    queryParams.push(endDate.toISOString());
+                                                                }
+
+                                                                con.query(query, queryParams, (error, result) => {
+                                                                    if (error) {
+                                                                        console.error('Error while executing SQL query:', error);
+                                                                        res.status(500).json({
+                                                                            success: false,
+                                                                            error: 'Error While fetching Appointment',
+                                                                        });
+                                                                    } else {
+                                                                        // Map the result to include patient details
+                                                                        const formattedResult = result.map(appointment => ({
+                                                                            Appointment_Id: appointment.Appointment_Id,
+                                                                            patientId: appointment.patientId,                                                                           
+                                                                            Appointment_Date: appointment.Appointment_Date,
+                                                                            Appointment_StartTime: appointment.Appointment_StartTime,
+                                                                            Appointment_EndTime: appointment.Appointment_EndTime,
+                                                                            Appointment_Status: appointment.Appointment_Status,
+                                                                            Appointment_Type: appointment.Appointment_Type,
+                                                                            CreatedAt: appointment.CreatedAt,
+                                                                            UpdatedAt: appointment.UpdatedAt,
+                                                                            patient_details: {
+                                                                                FirstName: appointment.FirstName,
+                                                                                LastName: appointment.LastName,
+                                                                                DOB: appointment.DOB,
+                                                                                Gender: appointment.Gender,
+                                                                                Address: appointment.Address,
+                                                                                Email: appointment.Email,
+                                                                                Phone_no: appointment.Phone_no,
+                                                                            },
+                                                                        }));
+
+                                                                        res.status(200).json({
+                                                                            success: true,
+                                                                            message: 'Filtered Appointment Details',
+                                                                            Appointment_Details: formattedResult,
+                                                                        });
+                                                                    }
+                                                                });
+                                                            } catch (error) {
+                                                                console.error('Error:', error);
+                                                                res.status(500).json({
+                                                                    success: false,
+                                                                    error: 'There is an error',
+                                                                });
+                                                            }
+                                                        };
+
+                                                                                                            
+                                                                    
+                  
 
 
-        module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass }
+        module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass  , seeAppointments}
