@@ -2,10 +2,10 @@ const con = require('../config/db')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto');
 const sendEmails = require('../utils/forgetpass_sentEmail')
-const upload = require('../uploadImages')
-const qr = require('qr-image'); 
+const upload = require('../uploadImages') 
 const QRCode = require ('qrcode')
-const fs = require('fs'); 
+const fs = require('fs');
+const qr = require('qr-image');
 
 
 
@@ -473,127 +473,261 @@ const fs = require('fs');
                                       }
       
         // create an API for Book Appointment 
-        const Book_Appointment = async (req, res) => {
-            try {
-              const { patientId, doctorId, Appointment_Date, Appointment_StartTime, Appointment_EndTime, Appointment_Type } = req.body;
-          
-              // Check if the appointment slot is available
-              const availabilitySql = `
-                SELECT *
-                FROM appointments
-                WHERE doctorId = ? 
-                AND Appointment_Date = ?
-                AND (
-                  (Appointment_StartTime < ? AND Appointment_EndTime > ?)
-                  OR (Appointment_StartTime >= ? AND Appointment_StartTime < ?)
-                  OR (Appointment_EndTime > ? AND Appointment_EndTime <= ?)
-                )
-              `;
-          
-              const availabilityValues = [
-                doctorId,
-                Appointment_Date,
-                Appointment_EndTime,
-                Appointment_StartTime,
-                Appointment_StartTime,
-                Appointment_EndTime,
-                Appointment_StartTime,
-                Appointment_EndTime,
-              ];
-          
-              con.query(availabilitySql, availabilityValues, async (error, results) => {
-                if (error) {
-                  console.error('Error checking appointment availability:', error);
-                  res.status(500).json({ success: false, error: 'Error while checking appointment availability' });
-                  return;
-                }
-          
-                if (results.length === 0) {
-                  console.log('Conflict detected'); 
-                  res.status(400).json({ success: false, error: 'Appointment slot is not available' });
-                  return;
-                }
-          
-                // If the slot is available, generate a QR code link
-                const appointmentNumber = generateUniqueAppointmentNumber();
-                const qrCodeLink = `http://localhost:5000/?appointment_number=${appointmentNumber}`;
-                const qrCodeFilename = `/${appointmentNumber}.png`;
-          
-                // Generate and save the QR code
-                await generateQRCode(qrCodeLink, qrCodeFilename);
-          
-                // Insert the appointment record with QR code link and appointment number
-                const insertSql = `
-                  INSERT INTO appointments (patientId, doctorId, Appointment_Date,
-                    Appointment_StartTime, Appointment_EndTime, Appointment_Type, Appointment_Status, QR_Code_Link, Appointment_Number)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-          
-                const insertValues = [
-                  patientId,
-                  doctorId,
-                  Appointment_Date,
-                  Appointment_StartTime,
-                  Appointment_EndTime,
-                  Appointment_Type,
-                  'Booked',
-                  qrCodeLink,
-                  appointmentNumber,
-                ];
-          
-                con.query(insertSql, insertValues, (error, result) => {
-                  if (error) {
-                    console.error('Error booking appointment:', error);
-                    res.status(500).json({ success: false, error: 'Error while booking appointment' });
-                    return;
-                  }
-                  const qrCodeImage = fs.readFileSync(qrCodeFilename);
-                  res.status(200).json({
-                    success: true,
-                    message: 'Appointment booked successfully',
-                    qrCodeLink,
-                    appointmentNumber,
-                    qrCodeImage: qrCodeImage.toString('base64')
-                  });
-                });
-              });
-            } catch (error) {
-              console.error('Error in booking appointment:', error);
-              res.status(500).json({ success: false, error: 'There is an error' });
-            }
-          }
-          
-          // Function to generate a unique appointment number
-          function generateUniqueAppointmentNumber() {
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let appointmentNumber = '';
-            const length = 8;
-          
-            for (let i = 0; i < length; i++) {
-              const randomIndex = Math.floor(Math.random() * characters.length);
-              appointmentNumber += characters.charAt(randomIndex);
-            }
-          
-            return appointmentNumber;
-          }
-          
-          // Function to generate and save QR code
-          async function generateQRCode(data, filename) {
-            try {
-              const qrCode = qr.image(data, { type: 'png' });
-              qrCode.pipe(fs.createWriteStream(filename));
-              console.log(`QR code saved to ${filename}`);
-            } catch (error) {
-              throw error;
-            }
-          }
+                                        const Book_Appointment = async (req, res) => {
+                                            try {
+                                                const { patientId, doctorId, Appointment_Date, Appointment_StartTime, Appointment_EndTime, Appointment_Type } = req.body;
+                                        
+                                                // Check if the appointment slot is available in doctor_schedules
+                                                const availabilitySql = `
+                                                    SELECT *
+                                                    FROM doctor_schedules
+                                                    WHERE doctorId = ? 
+                                                    AND scheduleDate = ?
+                                                    AND startTime <= ?
+                                                    AND endTime >= ?
+                                                `;
+                                        
+                                                const availabilityValues = [doctorId, Appointment_Date, Appointment_StartTime, Appointment_EndTime];
+                                        
+                                                con.query(availabilitySql, availabilityValues, async (error, results) => {
+                                                    if (error) {
+                                                        console.error('Error checking appointment availability:', error);
+                                                        res.status(500).json({ success: false, error: 'Error while checking appointment availability' });
+                                                        return;
+                                                    }
+                                        
+                                                    if (results.length === 0) {
+                                                        console.log('Slot not available');
+                                                        res.status(400).json({ success: false, error: 'Appointment slot is not available' });
+                                                        return;
+                                                    }
+                                        
+                                                    // If the slot is available, continue with booking the appointment as you originally did
+                                                    const appointmentNumber = generateUniqueAppointmentNumber();
+                                                    const qrCodeLink = `http://localhost:5000/?appointment_number=${appointmentNumber}`;
+                                                    const qrCodeFilename = `/qrCode/${appointmentNumber}.png`;
+                                        
+                                                    // Generate and save the QR code
+                                                    await generateQRCode(qrCodeLink, qrCodeFilename);
+                                        
+                                                    // Insert the appointment record with QR code link and appointment number
+                                                    const insertSql = `
+                                                        INSERT INTO appointments (patientId, doctorId, Appointment_Date,
+                                                            Appointment_StartTime, Appointment_EndTime, Appointment_Type, Appointment_Status, QR_Code_Link, Appointment_Number)
+                                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                                    `;
+                                        
+                                                    const insertValues = [
+                                                        patientId,
+                                                        doctorId,
+                                                        Appointment_Date,
+                                                        Appointment_StartTime,
+                                                        Appointment_EndTime,
+                                                        Appointment_Type,
+                                                        'Booked',
+                                                        qrCodeLink,
+                                                        appointmentNumber,
+                                                    ];
+                                        
+                                                    con.query(insertSql, insertValues, (error, result) => {
+                                                        if (error) {
+                                                            console.error('Error booking appointment:', error);
+                                                            res.status(500).json({ success: false, error: 'Error while booking appointment' });
+                                                            return;
+                                                        }
+                                                        const qrCodeImage = fs.readFileSync(qrCodeFilename);
+                                                        res.status(200).json({
+                                                            success: true,
+                                                            message: 'Appointment booked successfully',
+                                                            qrCodeLink,
+                                                            appointmentNumber,
+                                                            qrCodeImage: qrCodeImage.toString('base64')
+                                                        });
+                                                    });
+                                                });
+                                            } catch (error) {
+                                                console.error('Error in booking appointment:', error);
+                                                res.status(500).json({ success: false, error: 'There is an error' });
+                                            }
+                                        }
+
+                                             
+                                                // Function to generate a unique appointment number
+                                                function generateUniqueAppointmentNumber() {
+                                                    const characters = '0123456789';
+                                                    let appointmentNumber = '';
+                                                    const length = 8;
+                                                
+                                                    for (let i = 0; i < length; i++) {
+                                                    const randomIndex = Math.floor(Math.random() * characters.length);
+                                                    appointmentNumber += characters.charAt(randomIndex);
+                                                    }
+                                                
+                                                    return appointmentNumber;
+                                                }
+                                                
+                                                // Function to generate and save QR code
+                                                async function generateQRCode(data, filename) {
+                                                    try {
+                                                        const qrCode = qr.image(data, { type: 'png' });
+                                                        qrCode.pipe(fs.createWriteStream(filename))
+                                                        .on('finish' , ()=>{
+                                                            console.log(`QR code saved to ${filename}`);
+                                                        })
+                                                       
+                                                    } 
+                                                    catch (error) {
+                                                    throw error;
+                                                    }
+                                                }
+            // API for see doctor schedule
+                                                    const seeDoctorSchedule = async(req , res) =>{
+                                                        try {
+                                                            const doctorId = req.params.doctorId
+                                                            const selectedDate = req.query.selectedDate
+
+                                                            const sql = ` SELECT COUNT(*) AS count
+                                                                         FROM  doctor_schedules WHERE doctorId = ${doctorId} AND 
+                                                                         scheduleDate = '${selectedDate}'  ` 
+
+                                                            con.query(sql , (error , result)=>{
+                                                                if(error)
+                                                                {
+                                                                    res.status(500).json({
+                                                                        success : false ,
+                                                                        error : 'Error while checking doctor availability'
+                                                                    })
+                                                                }
+                                                                else
+                                                                { 
+                                                                     const availabilityCount = result[0].count
+
+                                                                    if(availabilityCount === 0)
+                                                                    {
+                                                                        res.status(400).json({
+                                                                                    success : false,
+                                                                                    error : 'Doctor is not available on selected Date'
+                                                                        })
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        const sql = `
+                                                                        SELECT scheduleDate, startTime, endTime, scheduleType, availability
+                                                                        FROM doctor_schedules
+                                                                        WHERE doctorId = ${doctorId} AND scheduleDate = '${selectedDate}'`;
+
+                                                                        con.query(sql , (error , result)=>{
+                                                                            if(error)
+                                                                            {
+                                                                                res.status(500).json({
+                                                                                    success : false ,
+                                                                                    error : 'Error while getting doctor schedule details'
+                                                                                })
+                                                                            }  else
+                                                                            {                                                                     
+
+                                                                        res.status(200).json({
+                                                                            success : true ,
+                                                                            message : 'Doctor schedule ',
+                                                                            scheduleDetails : result
+                                                                        })
+                                                                    }
+                                                                })
+                                                                }
+                                                            }
+                                                            })
+
+                                                        } catch (error) {
+                                                            res.status(500).json({
+                                                                success : false,
+                                                                error : ' there is an error'
+                                                            })
+                                                        }
+                                                    }
           
                                         
-                                
+                                                                 /* Rating Doctor   */
+
+        // API for rating Doctor
+                                                            const ratingDoctor = async (req, res) => {
+                                                                try {
+                                                                const patientId = req.params.patientId;
+                                                                const { doctorId, rating, review } = req.body;
+                                                            
+                                                                // Check if patientId is a valid number
+                                                                if (isNaN(patientId)) {
+                                                                    return res.status(400).json({
+                                                                    success: false,
+                                                                    error: 'Invalid patientId',
+                                                                    });
+                                                                }
+                                                            
+                                                                // Check if the rating is within the valid range (1 to 5)
+                                                                if (rating < 1 || rating > 5) {
+                                                                    return res.status(400).json({
+                                                                    success: false,
+                                                                    error: 'Invalid rating. Rating must be between 1 and 5.',
+                                                                    });
+                                                                }
+                                                            
+                                                                // Check if a rating from the same patient to the same doctor already exists
+                                                                const checkRatingQuery = 'SELECT * FROM doctor_ratings WHERE doctorId = ? AND patientId = ?';
+                                                                con.query(checkRatingQuery, [doctorId, patientId], (error, result) => {
+                                                                    if (error) {
+                                                                    res.status(400).json({
+                                                                        success: false,
+                                                                        error: 'Error while checking for existing rating',
+                                                                    });
+                                                                    } else if (result.length > 0) {
+                                                                    // Update the existing rating
+                                                                    const updateQuery = 'UPDATE doctor_ratings SET rating = ?, review = ?, created_at = CURRENT_TIMESTAMP WHERE doctorId = ? AND patientId = ?';
+                                                                    con.query(updateQuery, [rating, review, doctorId, patientId], (error, result) => {
+                                                                        if (error) {
+                                                                        res.status(400).json({
+                                                                            success: false,
+                                                                            error: 'Error while updating rating',
+                                                                        });
+                                                                        } else {
+                                                                        res.status(200).json({
+                                                                            success: true,
+                                                                            message: 'Rating updated successfully',
+                                                                            result: { doctorId, patientId, rating, review },
+                                                                        });
+                                                                        }
+                                                                    });
+                                                                    } else {
+                                                                    // Insert a new rating
+                                                                    const insertQuery = 'INSERT INTO doctor_ratings (doctorId, patientId, rating, review) VALUES (?, ?, ?, ?)';
+                                                                    con.query(insertQuery, [doctorId, patientId, rating, review], (error, result) => {
+                                                                        if (error) {
+                                                                        res.status(400).json({
+                                                                            success: false,
+                                                                            error: 'Error while giving rating to the doctor',
+                                                                        });
+                                                                        } else {
+                                                                        res.status(200).json({
+                                                                            success: true,
+                                                                            message: 'Rating added successfully',
+                                                                            result: { doctorId, patientId, rating, review },
+                                                                        });
+                                                                        }
+                                                                    });
+                                                                    }
+                                                                });
+                                                                } catch (error) {
+                                                                res.status(500).json({
+                                                                    success: false,
+                                                                    error: 'There is an error',
+                                                                });
+                                                                }
+                                                            };
+                                                            
+                                                                                    
                                         
           
                  module.exports = {
                     register_patient , all_Patient , getPatient , login , patientChangePass,
-                    forgetPassToken , reset_Password , searchDoctor , seeDoctorDetails , Book_Appointment
+                    forgetPassToken , reset_Password , searchDoctor , seeDoctorDetails , Book_Appointment,
+                    seeDoctorSchedule , ratingDoctor
                      
                  }

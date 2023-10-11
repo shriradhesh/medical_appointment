@@ -41,6 +41,15 @@ const adminController = require('../controller/adminController')
                  router.post('/checkAndToggleStatus/:doctorId', adminController.checkAndToggleStatus)
 // API for delete Docotor where status = 0
                  router.delete('/deleteDoctor/:doctorId', adminController.deleteDoctor)
+ 
+                                           /* Manage Appointments */         
+                                                               
+// API for get booking Appointment By Patient Id
+                 router.get('/getbookingAppointment_ByPatient/:patientId', adminController.getbookingAppointment_ByPatient)
+// API for get all appointments 
+                 router.get('/allAppointments',adminController.allAppointments)
+// API for see booking appointments of a doctor By doctor Id
+                 router.get('/seebookingAppointment_ofDoctor/:doctorId', adminController.seebookingAppointment_ofDoctor)
 
 
 

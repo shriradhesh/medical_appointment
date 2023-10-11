@@ -25,8 +25,13 @@ const upload = require('../uploadImages')
                    router.post('/searchDoctor', patientController.searchDoctor)
 // API for see Doctor Details
                    router.post('/seeDoctorDetails/:doctorId', patientController.seeDoctorDetails )
+// API for see Doctor Schedule 
+                   router.get('/seeDoctorSchedule/:doctorId' , patientController.seeDoctorSchedule)
 // API for Book Appointment
                    router.post('/Book_Appointment', patientController.Book_Appointment)
+// API for doctor rating
+                   router.post('/ratingDoctor/:patientId' , patientController.ratingDoctor)
+
 
 
 

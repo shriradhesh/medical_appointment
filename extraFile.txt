@@ -48,76 +48,79 @@ app.listen(port, () => {
 
 
 
-   ....
-get apoointments
-    ...
-
-
-const express = require('express');
+ const express = require('express');
 const router = express.Router();
+const mysql = require('mysql');
 
-const seeAppointments = async (req, res) => {
+// MySQL database connection configuration
+const con = mysql.createConnection({
+  host: 'your-mysql-host',
+  user: 'your-mysql-user',
+  password: 'your-mysql-password',
+  database: 'your-mysql-database',
+});
+
+// Validate input data function
+function validateScheduleData(data) {
+  const { doctorId, scheduleDate, startTime, endTime, scheduleType, availability } = data;
+
+  if (!doctorId || !scheduleDate || !startTime || !endTime || !scheduleType || !availability) {
+    return false;
+  }
+
+  // Additional validation logic can be added here as needed
+
+  return true;
+}
+
+// Define a route to create a schedule for a doctor
+router.post('/create-schedule', async (req, res) => {
   try {
-    const doctorId = req.params.doctorId;
+    const scheduleData = req.body;
 
-    // Check if the dateRange query parameter is provided
-    const dateRange = req.query.dateRange;
-
-    let dateFilter = '';
-    let startDate, endDate;
-
-    switch (dateRange) {
-      case 'week':
-        startDate = new Date();
-        endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-        break;
-
-      case 'day':
-        startDate = new Date();
-        endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
-        break;
-
-      case 'month':
-        startDate = new Date();
-        endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-        break;
-
-      default:
-        break;
+    // Validate input data
+    if (!validateScheduleData(scheduleData)) {
+      return res.status(400).json({ success: false, error: 'Invalid schedule data' });
     }
 
-    if (startDate && endDate) {
-      dateFilter = `A.Appointment_Date >= '${startDate.toISOString().slice(0, 10)}' AND A.Appointment_Date < '${endDate.toISOString().slice(0, 10)}'`;
-    }
-
-    const query = `
-      SELECT A.*, P.*
-      FROM appointments AS A
-      INNER JOIN patient AS P ON A.patientId = P.patientId
-      WHERE A.doctorId = ? ${dateFilter}
+    // Insert the schedule record into the doctor_schedules table
+    const insertSql = `
+      INSERT INTO doctor_schedules (doctorId, scheduleDate, startTime, endTime, scheduleType, availability)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
 
-    con.query(query, [doctorId], (error, result) => {
+    const insertValues = [
+      scheduleData.doctorId,
+      scheduleData.scheduleDate,
+      scheduleData.startTime,
+      scheduleData.endTime,
+      scheduleData.scheduleType,
+      scheduleData.availability,
+    ];
+
+    // Execute the SQL query to insert the schedule
+    con.query(insertSql, insertValues, (error, result) => {
       if (error) {
-        console.error('Error while executing SQL query:', error);
-        res.status(500).json({
-          success: false,
-          error: 'Error While fetching Appointment',
-        });
-      } else {
-        res.status(200).json({
-          success: true,
-          message: 'Filtered Appointment Details',
-          Appointment_Details: result,
-        });
+        console.error('Error creating doctor schedule:', error);
+        return res.status(500).json({ success: false, error: 'Error while creating doctor schedule' });
       }
+
+      res.status(201).json({ success: true, message: 'Doctor schedule created successfully' });
     });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'There is an error',
-    });
+    console.error('Error in creating doctor schedule:', error);
+    res.status(500).json({ success: false, error: 'There is an error' });
   }
-};
+});
+
+// Start the MySQL connection
+con.connect((err) => {
+  if (err) {
+    console.error('Error connecting to MySQL:', err);
+    throw err;
+  }
+  console.log('Connected to MySQL database');
+});
+
+module.exports = router;
 

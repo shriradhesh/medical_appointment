@@ -268,9 +268,59 @@ const { error } = require('console');
                                                             }
                                                         };
 
-                                                                                                            
-                                                                    
+        
+                                                        
+                                                             /* schedule  */
+            // API for create schedules 
+                                            const createSchedule = async (req, res) => {
+                                                const doctorId = req.params.doctorId;
+                                                const { scheduleDate, startTime, endTime, scheduleType, availability } = req.body;
+                                            
+                                                // Check if doctorId is a valid number
+                                                if (isNaN(doctorId)) {
+                                                    return res.status(400).json({
+                                                        success: false,
+                                                        error: 'Invalid doctorId in URL parameter',
+                                                    });
+                                                }
+                                            
+                                                const InsertQuery = `INSERT INTO doctor_schedules (doctorId, scheduleDate, 
+                                                                   startTime, endTime, scheduleType, availability)
+                                                                    VALUES (?, ?, ?, ?, ?, ?)`;
+                                            
+                                                con.query(InsertQuery, [doctorId, scheduleDate, startTime,
+                                                                             endTime, scheduleType, availability], (error, result) => {
+                                                    if (error) {
+                                                        console.error(error);
+                                                        res.status(500).json({
+                                                            success: false,
+                                                            error: 'Error creating schedule',
+                                                        });
+                                                    } else {
+                                                        // After inserting the schedule, retrieve its details from the database
+                                                        const scheduleId = result.insertId; 
+                                                        const SelectQuery = 'SELECT * FROM doctor_schedules WHERE scheduleId  = ?';
+                                            
+                                                        con.query(SelectQuery, [scheduleId], (selectError, scheduleDetails) => {
+                                                            if (selectError) {
+                                                                console.error(selectError);
+                                                                res.status(500).json({
+                                                                    success: false,
+                                                                    error: 'Error retrieving schedule details',
+                                                                });
+                                                            } else {
+                                                                res.status(200).json({
+                                                                    success: true,
+                                                                    message: 'Schedule created successfully',
+                                                                    result: scheduleDetails[0], 
+                                                                });
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                  
                   
 
 
-        module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass  , seeAppointments}
+        module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass  , seeAppointments , createSchedule}

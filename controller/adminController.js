@@ -694,10 +694,101 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                         }
 
 
+    // API for see All Booking Appointment by patient
 
+                                const getbookingAppointment_ByPatient = (req, res) => {
+                                    const patientId = req.params.patientId;
+                                    let { startDate, endDate } = req.query;
+                                    let sql = `SELECT * FROM appointments WHERE patientId = ${patientId}`;
+                                    if (startDate && endDate) {
+                                        sql += ` AND Appointment_Date >= '${startDate}' AND Appointment_Date <= '${endDate}'`;
+                                    } else if (startDate) {
+                                        sql += ` AND Appointment_Date = '${startDate}'`;
+                                    }
+                                
+                                    con.query(sql, (error, result) => {
+                                        if (error) {
+                                            console.error(error);
+                                            res.status(500).json({
+                                                success: false,
+                                                error: 'Error while getting appointment details'
+                                            });
+                                        } else {
+                                            if (result.length === 0) {
+                                                res.status(400).json({
+                                                    success: false,
+                                                    error: 'Invalid patientId or no appointments found '
+                                                });
+                                            } else {
+                                                res.status(200).json({
+                                                    success: true,
+                                                    message: 'Appointment Details:',
+                                                    Appointment_details: result
+                                                });
+                                            }
+                                        }
+                                    });
+                                };
 
+            // API for get all Appointments done by patients 
+                                        const allAppointments = (req, res) => {
+                                            let { startDate, endDate } = req.query;
+                                            let sql = 'SELECT * FROM appointments WHERE 1=1';
+                                        
+                                            if (startDate && endDate) {
+                                            sql += ` AND Appointment_Date >= '${startDate}' AND Appointment_Date <= '${endDate}'`;
+                                            } else if (startDate) {
+                                            sql += ` AND Appointment_Date = '${startDate}'`;
+                                            }
+                                        
+                                            con.query(sql, (error, result) => {
+                                            if (error) {
+                                                console.error(error);
+                                                res.status(500).json({ err: 'Error while getting all Appointments' });
+                                            } else {
+                                                res.status(200).json({ success: true, message: 'All Appointments', allAppointments: result });
+                                            }
+                                            });
+                                        };
 
+        // API for see Appointments of particular docotor
+                                                const seebookingAppointment_ofDoctor = (req, res) => {
+                                                    const doctorId = req.params.doctorId;
+                                                    let { startDate, endDate } = req.query;
+                                                    let sql = `SELECT * FROM appointments WHERE doctorId = ${doctorId}`;
+                                                    if (startDate && endDate) {
+                                                        sql += ` AND Appointment_Date >= '${startDate}' AND Appointment_Date <= '${endDate}'`;
+                                                    } else if (startDate) {
+                                                        sql += ` AND Appointment_Date = '${startDate}'`;
+                                                    }
+                                                
+                                                    con.query(sql, (error, result) => {
+                                                        if (error) {
+                                                            console.error(error);
+                                                            res.status(500).json({
+                                                                success: false,
+                                                                error: 'Error while getting appointment details'
+                                                            });
+                                                        } else {
+                                                            if (result.length === 0) {
+                                                                res.status(400).json({
+                                                                    success: false,
+                                                                    error: 'Invalid doctorId or no appointments found '
+                                                                });
+                                                            } else {
+                                                                res.status(200).json({
+                                                                    success: true,
+                                                                    message: 'Appointment Details:',
+                                                                    Appointment_details: result
+                                                                });
+                                                            }
+                                                        }
+                                                    });
+                                                };
+              
+                                
     
 module.exports = { register_Admin, loginAdmin , AdminChangePass  , Admin_forgetPassToken,
                    Admin_reset_Password ,updateProfile  , AddDoctor , allDoctor , getDoctor,
-                   updateDoctorDetails , checkAndToggleStatus , deleteDoctor}
+                   updateDoctorDetails , checkAndToggleStatus , deleteDoctor , getbookingAppointment_ByPatient ,
+                   allAppointments , seebookingAppointment_ofDoctor}
