@@ -18,6 +18,8 @@ const upload = require('../uploadImages')
                        router.get('/seeAppointments/:doctorId', doctorController.seeAppointments)
 // API for Schedule Availability of Doctor
                     router.post('/createSchedule/:doctorId', doctorController.createSchedule )
+// Api for check ratings
+                     router.get('/myRatings/:doctorId' , doctorController.myRatings)
                  
 
 

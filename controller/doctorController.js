@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt')
 const crypto = require('crypto');
 const upload = require('../uploadImages');
 const { error } = require('console');
+const { resolve } = require('path');
+const { rejects } = require('assert');
 
 
 
@@ -320,7 +322,42 @@ const { error } = require('console');
                                                 });
                                             }
                                   
-                  
+                // Api for see doctor rating (Average) 
+                                  const myRatings = async(req , res)=>{
+                                    try {
+                                           const doctorId = req.params.doctorId
+                                           const {rating} = req.body
+
+                                    const avgRating = await calculateAverageRating(doctorId)
+
+                                    return res.status(200).json({
+                                               success : true ,
+                                               message : 'Doctor rating ',
+                                               DoctorRating : avgRating
+                                    })
+                                    }
+                                     catch (error) {
+                                        res.status(500).json({
+                                            success : false ,
+                                            error : 'there is an error'
+                                        })    
+                                    }
+                                  }
+
+                                  const calculateAverageRating = async (doctorId) => {
+                                    return new Promise((resolve, reject) => {
+                                        const averageRatingQuery = 'SELECT ROUND(AVG(rating) ,1) AS avg_rating FROM doctor_ratings WHERE doctorId = ?';
+                                        con.query(averageRatingQuery, [doctorId], (error, result) => {
+                                            if (error) {
+                                                reject(error);
+                                            } else {
+                                                resolve(result[0].avg_rating || 0);
+                                            }
+                                        });
+                                    });
+                                };
+                                
 
 
-        module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass  , seeAppointments , createSchedule}
+        module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass  , 
+                       seeAppointments , createSchedule , myRatings}
