@@ -6,6 +6,7 @@ const upload = require('../uploadImages')
 const QRCode = require ('qrcode')
 const fs = require('fs');
 const qr = require('qr-image');
+const session = require('express-session')
 
 
 
@@ -109,40 +110,45 @@ const qr = require('qr-image');
                                            }
 
         // API for login patient 
-                                                    const login = async (req, res) => {
-                                                        const { Email, Password } = req.body;
-                                                    
-                                                        const sql = 'SELECT * FROM patient WHERE Email = ?';
-                                                    
-                                                        con.query(sql, [Email], function (error, results) {
-                                                       
-                                                        if (error) {
-                                                            res.status(500).json({ success: false, error: 'Error querying the database' });
-                                                        } else {
-                                                            if (results.length === 0) {
-                                                            res.status(401).json({ success: false, error: 'Email not found' });
+                                                        const login = async (req, res) => {
+                                                            const { Email, Password } = req.body;
+                                                        
+                                                            const sql = 'SELECT * FROM patient WHERE Email = ?';
+                                                        
+                                                            con.query(sql, [Email], function (error, results) {
+                                                            if (error) {
+                                                                res.status(500).json({ success: false, error: 'Error querying the database' });
                                                             } else {
-                                                            const hashedPassword = results[0].Password;
-                                                            
-                                                            bcrypt.compare(Password, hashedPassword, function (error, isMatch) {
-                                                                if (error) {
-                                                                res.status(500).json({ success: false, error: 'Error comparing passwords' });
-                                                                } else if (!isMatch) {
-                                                                
-                                                                res.status(401).json({ success: false, error: 'Incorrect password' });
+                                                                if (results.length === 0) {
+                                                                res.status(401).json({ success: false, error: 'Email not found' });
                                                                 } else {
-                                                                // Passwords match, login successful
-                                                                res.status(200).json({
-                                                                    success: true,
-                                                                    message: 'Patient logged in successfully',
-                                                                    patient_details: results[0]
+                                                                const hashedPassword = results[0].Password;
+                                                        
+                                                                bcrypt.compare(Password, hashedPassword, function (error, isMatch) {
+                                                                    if (error) {
+                                                                    res.status(500).json({ success: false, error: 'Error comparing passwords' });
+                                                                    } else if (!isMatch) {
+                                                                    res.status(401).json({ success: false, error: 'Incorrect password' });
+                                                                    } else {
+                                                                    // Set the patient session
+                                                                    req.session.patient = results[0];
+                                                        
+                                                                    // Log a message to the console
+                                                                    console.log('Patient session generated:', results[0]);
+                                                        
+                                                                    // Passwords match, login successful
+                                                                    res.status(200).json({
+                                                                        success: true,
+                                                                        message: 'Patient logged in successfully',
+                                                                        patient_details: results[0],
+                                                                    });
+                                                                    }
                                                                 });
                                                                 }
-                                                            });
                                                             }
-                                                        }
-                                                        });
-                                                    };
+                                                            });
+                                                        };
+                                                        
 
 
                 // API for change Password
@@ -721,13 +727,167 @@ const qr = require('qr-image');
                                                                 });
                                                                 }
                                                             };
-                                                            
+
+                        // saved Doctor as favourate
+                        const saveDoctorAsFavorite = async (req, res) => {
+                            try {
+                                const patientId = req.params.patientId;
+                                const doctorId = req.body.doctorId;
+                        
+                                // Check if the patient and doctor exist
+                                const checkPatientQuery = `SELECT * FROM patient WHERE patientId = ${patientId}`;
+                                const checkDoctorQuery = `SELECT * FROM doctor WHERE doctorId = ${doctorId}`;
+                        
+                                con.query(checkPatientQuery, (error, patientResult) => {
+                                    if (error) {
+                                        return res.status(500).json({
+                                            success: false,
+                                            error: 'Error while checking patient',
+                                        });
+                                    }
+                        
+                                    if (patientResult.length === 0) {
+                                        return res.status(400).json({
+                                            success: false,
+                                            error: 'Invalid Patient Id',
+                                        });
+                                    }
+                        
+                                    con.query(checkDoctorQuery, (error, doctorResult) => {
+                                        if (error) {
+                                            return res.status(500).json({
+                                                success: false,
+                                                error: 'Error while checking doctor',
+                                            });
+                                        }
+                        
+                                        if (doctorResult.length === 0) {
+                                            return res.status(400).json({
+                                                success: false,
+                                                error: 'Invalid Doctor Id',
+                                            });
+                                        }
+                        
+                                        // Check if the doctor is already a favorite of the patient
+                                        const checkFavoriteQuery = `SELECT * FROM  patient_favorite_doctor WHERE
+                                                                   patientId = ${patientId} AND doctorId = ${doctorId}`;
+                        
+                                        con.query(checkFavoriteQuery, (error, favoriteResult) => {
+                                            if (error) {
+                                                return res.status(500).json({
+                                                    success: false,
+                                                    error: 'Error while checking favorite status',
+                                                });
+                                            }
+                        
+                                            if (favoriteResult.length > 0) {
+                                                return res.status(400).json({
+                                                    success: false,
+                                                    error: 'Doctor is already a favorite of the patient',
+                                                });
+                                            }
+                        
+                                            // If not a favorite, save the doctor as a favorite for the patient
+                                            const saveFavoriteQuery = `INSERT INTO  patient_favorite_doctor (patientId, doctorId) VALUES (${patientId}, ${doctorId})`;
+                        
+                                            con.query(saveFavoriteQuery, (error , favoriteResult) => {
+                                                if (error) {
+                                                    return res.status(500).json({
+                                                        success: false,
+                                                        error: 'Error while saving doctor as favorite',
+                                                    });
+                                                }
+                        
+                                                return res.status(200).json({
+                                                    success: true,
+                                                    message: 'Doctor saved as a favorite',
+                                                    favoriteResult : favoriteResult[0]
+                                                });
+                                            });
+                                        });
+                                    });
+                                });
+                            } catch (error) {
+                                res.status(500).json({
+                                    success: false,
+                                    error: 'There is an error',
+                                });
+                            }
+                        };
+
+
+        // API for get savedDoctor
+                            const mySavedDoctor = async (req, res) => {
+                                try {
+                                  const patientId = req.params.patientId;
+                              
+                                  const savedDoctorQuery = `SELECT * FROM patient_favorite_doctor WHERE patientId = ?`;
+                              
+                                  const result = await new Promise((resolve, reject) => {
+                                    con.query(savedDoctorQuery, [patientId], (error, result) => {
+                                      if (error) {
+                                        reject(error);
+                                      } else {
+                                        resolve(result);
+                                      }
+                                    });
+                                  });
+                              
+                                  if (result.length === 0) {
+                                    return res.status(400).json({
+                                      success: false,
+                                      error: "No doctor found",
+                                    });
+                                  }
+                              
+                                  return res.status(200).json({
+                                    success: true,
+                                    message: "Your saved Doctor",
+                                    savedDoctor: result[0],
+                                  });
+                                } catch (error) {
+                                  return res.status(500).json({
+                                    success: false,
+                                    error: "There is an error",
+                                  });
+                                }
+                              };
+
+    // API For logout Patient
+                                                const logoutPatient = (req, res) => {
+                                                    console.log('Session before destroying:', req.session);
+                                                    if (req.session.patient) {
+                                                    req.session.destroy((err) => {
+                                                        if (err) {
+                                                        res.status(500).json({ success: false, error: 'Error destroying the session' });
+                                                        } else {
+                                                        res.status(200).json({ success: true, message: 'Patient logged out successfully' });
+                                                        }
+                                                    });
+                                                    } else {
+                                                    res.status(401).json({ success: false, error: 'No active session to log out' });
+                                                    }
+                                                };
+      
+      
+      
+      
+
+
+      
+      
+
+
+
+                              
+                        
                                                                                     
                                         
           
                  module.exports = {
                     register_patient , all_Patient , getPatient , login , patientChangePass,
                     forgetPassToken , reset_Password , searchDoctor , seeDoctorDetails , Book_Appointment,
-                    seeDoctorSchedule , ratingDoctor
-                     
+                    seeDoctorSchedule , ratingDoctor , saveDoctorAsFavorite , mySavedDoctor , logoutPatient ,
+                    
+                      
                  }

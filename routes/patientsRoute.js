@@ -31,6 +31,13 @@ const upload = require('../uploadImages')
                    router.post('/Book_Appointment', patientController.Book_Appointment)
 // API for doctor rating
                    router.post('/ratingDoctor/:patientId' , patientController.ratingDoctor)
+// API for save Doctor as Favorite 
+                   router.post('/saveDoctorAsFavorite/:patientId', patientController.saveDoctorAsFavorite)
+// API for get savedDoctor 
+                   router.get('/mySavedDoctor/:patientId', patientController.mySavedDoctor)
+// API for logoutPatient
+                   router.get('/logoutPatient', patientController.logoutPatient)
+
 
 
 

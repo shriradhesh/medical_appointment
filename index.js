@@ -8,12 +8,15 @@ const port = process.env.PORT || 5001;
 const path = require('path')
 const bodyParser = require('body-parser')
 const cors = require('cors')
+const session = require('express-session')
+const crypto = require('crypto')
 
 
                            // Database connection
 var con = require('./config/db')
 
-
+// Generate a secure session secret key
+const sessionSecret = crypto.randomBytes(64).toString('hex');
 
                             // Middleware
  app.use(express.json())
@@ -21,6 +24,12 @@ app.use(bodyParser.json())
 app.use(cors())
 app.use(bodyParser.urlencoded({extended : true}))
 app.use( express.static('uploads'));
+
+app.use(session({
+  secret:  sessionSecret ,
+  resave: false,
+  saveUninitialized: true
+}));
 
 app.get('/' , (req , res)=>{
   res.send('Hello')
