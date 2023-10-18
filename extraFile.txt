@@ -1,18 +1,162 @@
-const logoutPatient  = async(req,res)=>{
-          try{
-            req.session.destroy(error =>{
-              if(error)
-              {
-                return res.status(500).json({ success : false ,  error :" Error while Logout the user"})
-              }
-              res.status(200).json({  success: true , message: ' Patient Logged out successfully' });
+const View_Appointments = async (req, res) => {
+    try {
+        const { patientId } = req.body;
+
+        // Retrieve the patient's upcoming appointments
+        const today = new Date();
+        const formattedToday = today.toISOString().split('T')[0]; // Get the current date in 'YYYY-MM-DD' format
+
+        const viewAppointmentsSql = `
+            SELECT *
+            FROM appointments
+            WHERE patientId = ?
+            AND Appointment_Date >= ?
+            ORDER BY Appointment_Date, Appointment_StartTime
+        `;
+
+        const viewAppointmentsValues = [patientId, formattedToday];
+
+        con.query(viewAppointmentsSql, viewAppointmentsValues, async (error, results) => {
+            if (error) {
+                console.error('Error fetching patient appointments:', error);
+                res.status(500).json({ success: false, error: 'Error while fetching patient appointments' });
+                return;
+            }
+
+            // Prepare alerts for upcoming appointments
+            const upcomingAppointments = results.map(appointment => {
+                const appointmentDate = new Date(appointment.Appointment_Date);
+                const today = new Date();
+                const timeDifference = appointmentDate - today;
+                const daysUntilAppointment = Math.floor(timeDifference / (1000 * 3600 * 24));
+
+                return {
+                    appointmentId: appointment.id,
+                    doctorId: appointment.doctorId,
+                    Appointment_Date: appointment.Appointment_Date,
+                    Appointment_StartTime: appointment.Appointment_StartTime,
+                    daysUntilAppointment,
+                };
             });
-          }
-          catch(error)
-          {
-            res.status(500).json({ error: 'Error while logging out', success: false });
-          }
-          
+
+            res.status(200).json({
+                success: true,
+                message: 'Patient appointments retrieved successfully',
+                upcomingAppointments,
+            });
+        });
+    } catch (error) {
+        console.error('Error in viewing patient appointments:', error);
+        res.status(500).json({ success: false, error: 'There is an error' });
+    }
+}
+
+
+
+   .........
+
+....
+  .........
+const express = require('express');
+const mysql = require('mysql');
+const cron = require('node-cron');
+const twilio = require('twilio');
+
+const app = express();
+
+// MySQL database connection configuration
+const con = mysql.createConnection({
+    host: 'your-mysql-host',
+    user: 'your-mysql-username',
+    password: 'your-mysql-password',
+    database: 'your-mysql-database',
+});
+
+con.connect(err => {
+    if (err) {
+        console.error('Error connecting to the database: ' + err.message);
+        return;
+    }
+    console.log('Connected to the database');
+});
+
+// Configure your Twilio credentials
+const twilioClient = twilio('YOUR_TWILIO_ACCOUNT_SID', 'YOUR_TWILIO_AUTH_TOKEN');
+const twilioPhoneNumber = 'YOUR_TWILIO_PHONE_NUMBER';
+
+// Schedule a cron job to run every minute
+cron.schedule('* * * * *', () => {
+    sendAppointmentAlerts();
+});
+
+async function sendAppointmentAlerts() {
+    // Calculate the alert time (3 hours before the current time)
+    const currentTime = new Date();
+    const alertTime = new Date(currentTime.getTime() + 3 * 60 * 60 * 1000);
+
+    // Query the database to find appointments that match the criteria
+    const query = `SELECT * FROM appointments WHERE Appointment_StartTime <= ?`;
+    const values = [alertTime];
+
+    con.query(query, values, async (error, appointments) => {
+        if (error) {
+            console.error('Error querying appointments: ' + error.message);
+            return;
         }
 
+        // Send SMS alerts to patients for the upcoming appointments
+        appointments.forEach(appointment => {
+            sendSMSToPatient(appointment, '+1234567890'); // Replace with the patient's mobile number
+        });
+    });
+}
 
+function sendSMSToPatient(appointment, patientPhoneNumber) {
+    // Use Twilio to send SMS alerts to patients
+    twilioClient.messages.create({
+        body: `Your appointment with ${appointment.doctorId} is scheduled for ${appointment.Appointment_StartTime}.`,
+        from: twilioPhoneNumber,
+        to: patientPhoneNumber,
+    })
+    .then(message => console.log('SMS sent:', message.sid))
+    .catch(error => console.error('Error sending SMS:', error));
+}
+
+app.listen(3000, () => {
+    console.log('Server is running on port 3000');
+});
+
+
+
+
+
+
+.....
+
+
+router.post('/upload-phr-report', upload.single('phrFile'), (req, res) => {
+  const { Email } = req.body;
+
+  // Check if the patient with the provided email exists in the database.
+  const patientCheckSQL = 'SELECT patientId FROM patient WHERE Email = ?';
+  con.query(patientCheckSQL, [Email], (error, result) => {
+    if (error) {
+      res.status(500).json({ success: false, error: 'Database error' });
+    } else if (result.length === 0) {
+      res.status(400).json({ success: false, error: 'Patient not found' });
+    } else {
+      // Get the file path of the uploaded PHR report
+      const phrFilePath = req.file.path;
+
+      // Update the PHR_Record field with the file path
+      const updatePHRSQL = 'UPDATE patient SET PHR_Record = ? WHERE Email = ?';
+      con.query(updatePHRSQL, [phrFilePath, Email], (error, updateResult) => {
+        if (error) {
+          res.status(500).json({ success: false, error: 'Error updating PHR record' });
+        } else {
+          res.status(200).json({ success: true, message: 'PHR report uploaded successfully' });
+        }
+      });
+    }
+  });
+});

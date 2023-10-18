@@ -1,4 +1,6 @@
 const con = require('../config/db')
+const admin = require('firebase-admin')
+const cron = require('node-cron')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto');
 const sendEmails = require('../utils/forgetpass_sentEmail')
@@ -7,8 +9,24 @@ const QRCode = require ('qrcode')
 const fs = require('fs');
 const qr = require('qr-image');
 const session = require('express-session')
+const serviceAccount = require('../utils/medical-appointment-81f6e-firebase-adminsdk-fgrgh-a838d9d641.json')
+const { sendNotificationToPatient } = require('../notification')
+const { error } = require('console');
+const twilio = require('twilio')
+// twilio credentials
 
+const accountSid = 'ACea0cb782d52a715846acedc254632e9e';
+const authToken = '9920e53cb0ddef7283f32ec3a392e531' ;
+const twilioPhoneNumber = '+16205914136'
+const client = new twilio(accountSid , authToken)
+const { createClient } = require('@google/maps');
+const { callback } = require('@google/maps/lib/internal/cli');
+const { directions } = require('@google/maps/lib/apis/directions');
 
+// Initilize the google map client with APi key
+const googleMapClient = createClient({
+    key : 'AIzaSyA5A00KFSxD15axpTODAcbWjgMVjAN8x58'
+})
 
                                       /* patient Table */
 
@@ -18,7 +36,7 @@ const session = require('express-session')
                                                     const {
                                                         FirstName,
                                                         LastName,
-                                                        DOB,
+                                                        Age,
                                                         Gender,
                                                         Address,
                                                         Email,
@@ -40,8 +58,8 @@ const session = require('express-session')
                                                                         console.error('Error hashing Password', Error);
                                                                         res.status(500).json({ success: false, Error: 'Error hashing Password' });
                                                                     } else {
-                                                                        const sql = 'INSERT INTO patient (FirstName, LastName, DOB, Gender, Address, Email, Password, Phone_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-                                                                        con.query(sql, [FirstName, LastName, DOB, Gender, Address, Email, hashedPassword, Phone_no], function (error, result) {
+                                                                        const sql = 'INSERT INTO patient (FirstName, LastName, Age, Gender, Address, Email, Password, Phone_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+                                                                        con.query(sql, [FirstName, LastName, Age, Gender, Address, Email, hashedPassword, Phone_no], function (error, result) {
                                                                             if (error) {
                                                                                 res.status(400).json({ success: false, Error: 'There is an error' });
                                                                             } else {
@@ -869,18 +887,234 @@ const session = require('express-session')
                                                     }
                                                 };
       
-      
-      
-      
+  // API for see my Appointments - 
+                                   
+                   
+                                                const myAppointments = async (req, res) => {
+                                                    try {
+                                                        const patientId = req.params.patientId;
+
+                                                        // Get today's date
+                                                        const today = new Date();
+                                                        const formattedToday = today.toISOString().split('T')[0];
+
+                                                        const viewAppointmentSql = `
+                                                            SELECT A.*, P.Phone_no, P.FirstName
+                                                            FROM appointments A
+                                                            JOIN patient P ON A.patientId = P.patientId
+                                                            WHERE A.Appointment_Date = ? AND P.patientId = ?
+                                                            ORDER BY A.Appointment_Date, A.Appointment_StartTime
+                                                        `;
+
+                                                        const viewAppointmentValues = [formattedToday, patientId];
+
+                                                        con.query(viewAppointmentSql, viewAppointmentValues, async (error, result) => {
+                                                            if (error) {
+                                                                return res.status(500).json({
+                                                                    success: false,
+                                                                    error: "There is an error finding Appointments",
+                                                                });
+                                                            } else if (result.length === 0) {
+                                                                return res.status(400).json({
+                                                                    success: false,
+                                                                    error: "No Appointments Found",
+                                                                });
+                                                            } else {
+                                                                res.status(200).json({
+                                                                    success: true,
+                                                                    message: 'Your Appointments',
+                                                                    appointments: result,
+                                                                });
+                                                            }
+                                                        });
+
+                                                    } catch (error) {
+                                                        return res.status(500).json({
+                                                            success: false,
+                                                            error: "There is an error",
+                                                        });
+                                                    }
+                                                };
+
+                                                const sendSMSReminder = (appointment , patient) =>{
+                                                    const message = `Hello ${patient.FirstName},
+                                                                         -------@@----------
+                                                                         Your Appointment is today
+                                                                            at
+                                                                        ${appointment.Appointment_StartTime}
+                                                                       `
+                                                    client.messages.create({
+                                                        body : message , 
+                                                        from : twilioPhoneNumber,
+                                                        to : patient.Phone_no
+                                                    })
+                                                    .then((message) => console.log(`an Alert message sent : ${message.sid}`))
+                                                    .catch((error) => console.error(`Error sending SMS : ${error}`))
+                                                }
 
 
-      
-      
 
+                                                            const sendAppointmentReminder = (con) =>{
+                                                                const today = new Date().toISOString().split('T')[0]
 
+                                                                const reminderSql = `
+                                                                SELECT A.* , P.Phone_no , P.FirstName
+                                                                FROM appointments A JOIN patient P ON
+                                                                A.patientId = P.patientId
+                                                                WHERE A.Appointment_Date = ?`
 
-                              
-                        
+                                                                con.query(reminderSql , [today] , (error , result)=>{
+                                                                    if (error){
+                                                                        console.error('Error retriving appointments for reminder ', error);
+                                                                    }
+                                                                    else {
+                                                                        result.forEach(appointment => sendSMSReminder(appointment , result))
+                                                                    }
+                                                                })
+                                                            }
+
+// API for get direction from google
+                                function getDirection (patientLocation , doctorAddress , callback){
+                                    googleMapClient.directions({
+                                        origin : patientLocation,
+                                        destination : doctorAddress,
+                                        mode : 'driving',
+                                    },
+                                        (directionError , respose) =>{
+                                            if(directionError)
+                                            {
+                                                console.error('error fetching direction from google Maps', directionError);
+                                                callback('Unable to fetch direction')
+                                                return
+                                            }
+
+                                            callback(null , respose.json)
+                                        }
+                                    
+                                    )
+                                }   
+                            
+                              // function to handle direction endPoint
+                              function getDirectionEndPoint (req,res){
+                                const { patientId , doctorId} = req.body
+
+                                const getAddressQuery = `SELECT P.Address AS patientAddress,
+                                                         d.Address AS doctorAddress FROM patient AS P , 
+                                                         doctor AS d WHERE P.patientId = ${patientId}
+                                                         AND d.doctorId = ${doctorId}`
+                                con.query(getAddressQuery , (error , result)=>{
+                                    if(error)
+                                    {
+                                        res.status(500).json({
+                                            success: false,
+                                            error : 'error fatching Address'
+                                        })
+                                    }
+                                    else
+                                    {
+                                        const { patientAddress , doctorAddress } = result[0]
+                                        getDirection(patientAddress , doctorAddress , (directionError , direction)=>{
+
+                                              if(directionError)
+                                              {
+                                                res.status(500).json({
+                                                    success : false,
+                                                    error : 'direction error ', directionError
+                                                })
+                                              }
+                                              else
+                                              {
+                                                res.status(200).json({
+                                                    success : true ,
+                                                    message :'Direction',
+                                                    Direction : direction
+                                                })
+                                              }
+                                        })
+                                    }
+                                })
+
+                                  }
+
+// API for upload PHR report 
+                             const upload_phrReport = async (req , res)=>{
+                                const patientId = req.params.patientId
+
+                                // check if the patient with the patient Id exist in the Database
+
+                                const patientCheckSql = `SELECT patientId , PHR_Record FROM patient WHERE patientId = ?`
+                                con.query(patientCheckSql , [patientId],(error , result) => {
+                                    if(error)
+                                    {
+                                        res.status(500).json({
+                                            success : false ,
+                                            error : 'Database error'
+                                        })
+                                    }
+
+                                    else if( result.length === 0)
+                                    {
+                                        res.status(400).json({
+                                            success : false,
+                                            error : 'patient not found with the given patient Id'
+                                        })
+                                    }
+                                    else
+                                    {
+                                        // Get the file path of the uploaded PHR report 
+                                        const phrFilePath = req.file.path
+                                        const existingPHR_Record = result[0].existingPHR_Record
+                                        
+                                        if(existingPHR_Record)
+                                        {
+                                            // if PHR_Record are already exist then update it
+                                            const updatePHRSql = `UPDATE patient SET PHR_Record = ? 
+                                            WHERE patientId = ?`
+                                    con.query = (updatePHRSql, [phrFilePath , patientId], (error , result)=>{
+                                        if(error)
+                                        {
+                                            res.status(500).json({
+                                                success : false ,
+                                                error : 'Error While update PHR record'
+                                            })
+                                        }
+                                        else
+                                        {
+                                            res.status(200).json({
+                                                success : true , 
+                                                message : 'PHR report uploaded successfully'
+                                            })
+                                        }
+                                     })
+    
+                                        }
+                                        else
+                                        {
+                                        // If no PHR record exist then , insert new file
+
+                                        const insertPHRsql = `UPDATE patient SET PHR_Record = ? WHERE patientId = ? `
+
+                                        con.query(insertPHRsql , [phrFilePath , patientId], (error , result)=>{
+                                            if(error)
+                                            {
+                                                res.status(500).json({
+                                                    success : false ,
+                                                    error : 'error while uploading PHR record'
+                                                })
+                                            }
+                                            else
+                                            {
+                                                res.status(200).json({
+                                                    success : true , 
+                                                    message : 'PHR report uploaded successfully'
+                                                })
+                                            }
+                                        })
+                                        }
+                                        
+                                    }
+                                })
+                             }
                                                                                     
                                         
           
@@ -888,6 +1122,6 @@ const session = require('express-session')
                     register_patient , all_Patient , getPatient , login , patientChangePass,
                     forgetPassToken , reset_Password , searchDoctor , seeDoctorDetails , Book_Appointment,
                     seeDoctorSchedule , ratingDoctor , saveDoctorAsFavorite , mySavedDoctor , logoutPatient ,
-                    
+                    myAppointments ,sendAppointmentReminder , getDirection , getDirectionEndPoint , upload_phrReport
                       
                  }

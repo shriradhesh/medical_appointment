@@ -2,6 +2,9 @@ const express = require('express')
 const router = express.Router()
 const patientController = require('../controller/patientController')
 const upload = require('../uploadImages')
+const admin = require('firebase-admin')
+
+
 
                                 /* ------- API -------- */
  // Api for register_Patient
@@ -37,6 +40,14 @@ const upload = require('../uploadImages')
                    router.get('/mySavedDoctor/:patientId', patientController.mySavedDoctor)
 // API for logoutPatient
                    router.get('/logoutPatient', patientController.logoutPatient)
+// API for see patient Appointments 
+                   router.get('/myAppointments/:patientId', patientController.myAppointments)
+// API for get Direction
+                   router.post('/getDirection', patientController.getDirection)
+// API for Upload/ update PHR report
+                   router.post('/upload_phrReport/:patientId', upload.single('PHR_Record'),patientController.upload_phrReport)
+                  
+                  
 
 
 

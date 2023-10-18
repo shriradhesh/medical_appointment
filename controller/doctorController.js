@@ -251,6 +251,7 @@ const { rejects } = require('assert');
                                                                                 Address: appointment.Address,
                                                                                 Email: appointment.Email,
                                                                                 Phone_no: appointment.Phone_no,
+                                                                                PHR_Record : appointment.PHR_Record
                                                                             },
                                                                         }));
 

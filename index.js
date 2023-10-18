@@ -10,7 +10,18 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const session = require('express-session')
 const crypto = require('crypto')
+const cron = require('node-cron')
+const admin = require('firebase-admin')
+const FCM = require('fcm-node')
+const serviceAccount = require('./utils/medical-appointment-81f6e-firebase-adminsdk-fgrgh-a838d9d641.json')
+const patientController = require('./controller/patientController')
 
+
+// schedule the job to run the daily at a specific time  7 am
+
+cron.schedule('0 7 * * *', () =>{
+  patientController.sendAppointmentReminder(con)
+})
 
                            // Database connection
 var con = require('./config/db')
