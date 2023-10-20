@@ -5,6 +5,7 @@ const upload = require('../uploadImages');
 const { error } = require('console');
 const { resolve } = require('path');
 const { rejects } = require('assert');
+const sendEmails = require('../utils/forgetpass_sentEmail')
 
 
 
@@ -18,18 +19,18 @@ const { rejects } = require('assert');
                                                     const results = await queryAsync(selectQuery, [Email]);
                                                 
                                                     if (results.length === 0) {
-                                                        return res.status(401).json({ success: false, error: 'Email not found' });
+                                                        return res.status(401).json({ success: false, message : 'Email not found' });
                                                     }
                                                 
                                                     const hashedPassword = results[0].password;
                                                 
                                                     bcrypt.compare(password, hashedPassword, function (error, isMatch) {
                                                         if (error) {
-                                                        return res.status(500).json({ success: false, error: 'Error comparing passwords' });
+                                                        return res.status(500).json({ success: false, message : 'Error comparing passwords' });
                                                         }
                                                 
                                                         if (!isMatch) {
-                                                        return res.status(401).json({ success: false, error: 'Incorrect password' });
+                                                        return res.status(401).json({ success: false, message : 'Incorrect password' });
                                                         }
                                                 
                                                         // Passwords match, login successful
@@ -41,7 +42,7 @@ const { rejects } = require('assert');
                                                     });
                                                     } catch (error) {
                                                     console.error(error);
-                                                    res.status(500).json({ success: false, error: 'There is an error' });
+                                                    res.status(500).json({ success: false, message : 'There is an error' });
                                                     }
                                                 };
                                                  // Create a queryAsync function to execute queries asynchronously
@@ -66,14 +67,14 @@ const { rejects } = require('assert');
                                     if (error) {
                                         return res.status(500).json({
                                             success: false,
-                                            error: 'An error occurred while checking the database',
+                                            message : 'An error occurred while checking the database',
                                         });
                                     }
                         
                                     if (result.length === 0) {
                                         return res.status(404).json({
                                             success: false,
-                                            error: 'Doctor not found',
+                                            message : 'Doctor not found',
                                         });
                                     }
                         
@@ -83,7 +84,7 @@ const { rejects } = require('assert');
                                     if (!imagePath) {
                                         return res.status(400).json({
                                             success: false,
-                                            error: 'Please upload your profile image for the update',
+                                            message : 'Please upload your profile image for the update',
                                         });
                                     }
                         
@@ -93,7 +94,7 @@ const { rejects } = require('assert');
                                         if (error) {
                                             return res.status(500).json({
                                                 success: false,
-                                                error: 'Error while updating the profile image',
+                                                message : 'Error while updating the profile image',
                                             });
                                         }
                         
@@ -106,7 +107,7 @@ const { rejects } = require('assert');
                             } catch (error) {
                                 return res.status(500).json({
                                     success: false,
-                                    error: 'There is an error in the server code',
+                                    message : 'There is an error in the server code',
                                 });
                             }
                         };
@@ -121,7 +122,7 @@ const { rejects } = require('assert');
                                                     if (newPassword !== confirmPassword) {
                                                         return res.status(400).json({
                                                             success: false,
-                                                            error: 'Passwords do not match',
+                                                            message : 'Passwords do not match',
                                                         });
                                                     }
                                             
@@ -131,13 +132,13 @@ const { rejects } = require('assert');
                                                         if (error) {
                                                             return res.status(500).json({
                                                                 success: false,
-                                                                error: 'Internal server error',
+                                                                message : 'Internal server error',
                                                             });
                                                         }
                                                         if (result.length === 0) {
                                                             return res.status(404).json({
                                                                 success: false,
-                                                                error: 'Doctor not found',
+                                                                message : 'Doctor not found',
                                                             });
                                                         }
                                             
@@ -150,7 +151,7 @@ const { rejects } = require('assert');
                                                         if (!isOldPasswordValid) {
                                                             return res.status(401).json({
                                                                 success: false,
-                                                                error: 'Incorrect old password',
+                                                                message : 'Incorrect old password',
                                                             });
                                                         }
                                             
@@ -163,7 +164,7 @@ const { rejects } = require('assert');
                                                             if (Error) {
                                                                 return res.status(500).json({
                                                                     success: false,
-                                                                    error: 'Internal server error',
+                                                                    message : 'Internal server error',
                                                                 });
                                                             }
                                                             return res.status(200).json({
@@ -175,7 +176,7 @@ const { rejects } = require('assert');
                                                 } catch (error) {
                                                     return res.status(500).json({
                                                         success: false,
-                                                        error: 'There is an error',
+                                                        message : 'There is an error',
                                                     });
                                                 }
                                             };
@@ -197,7 +198,7 @@ const { rejects } = require('assert');
                                                                     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
                                                                         res.status(400).json({
                                                                             success: false,
-                                                                            error: 'Invalid date format. Use YYYY-MM-DD.',
+                                                                            message : 'Invalid date format. Use YYYY-MM-DD.',
                                                                         });
                                                                         return;
                                                                     }
@@ -229,7 +230,7 @@ const { rejects } = require('assert');
                                                                         console.error('Error while executing SQL query:', error);
                                                                         res.status(500).json({
                                                                             success: false,
-                                                                            error: 'Error While fetching Appointment',
+                                                                            message : 'Error While fetching Appointment',
                                                                         });
                                                                     } else {
                                                                         // Map the result to include patient details
@@ -263,10 +264,10 @@ const { rejects } = require('assert');
                                                                     }
                                                                 });
                                                             } catch (error) {
-                                                                console.error('Error:', error);
+                                                                console.error('message :', error);
                                                                 res.status(500).json({
                                                                     success: false,
-                                                                    error: 'There is an error',
+                                                                    message : 'There is an error',
                                                                 });
                                                             }
                                                         };
@@ -283,7 +284,7 @@ const { rejects } = require('assert');
                                                 if (isNaN(doctorId)) {
                                                     return res.status(400).json({
                                                         success: false,
-                                                        error: 'Invalid doctorId in URL parameter',
+                                                        message : 'Invalid doctorId in URL parameter',
                                                     });
                                                 }
                                             
@@ -297,7 +298,7 @@ const { rejects } = require('assert');
                                                         console.error(error);
                                                         res.status(500).json({
                                                             success: false,
-                                                            error: 'Error creating schedule',
+                                                            message : 'Error creating schedule',
                                                         });
                                                     } else {
                                                         // After inserting the schedule, retrieve its details from the database
@@ -309,7 +310,7 @@ const { rejects } = require('assert');
                                                                 console.error(selectError);
                                                                 res.status(500).json({
                                                                     success: false,
-                                                                    error: 'Error retrieving schedule details',
+                                                                    message : 'Error retrieving schedule details',
                                                                 });
                                                             } else {
                                                                 res.status(200).json({
@@ -327,7 +328,7 @@ const { rejects } = require('assert');
                                   const myRatings = async(req , res)=>{
                                     try {
                                            const doctorId = req.params.doctorId
-                                           const {rating} = req.body
+                                           
 
                                     const avgRating = await calculateAverageRating(doctorId)
 
@@ -340,7 +341,7 @@ const { rejects } = require('assert');
                                      catch (error) {
                                         res.status(500).json({
                                             success : false ,
-                                            error : 'there is an error'
+                                            message : 'there is an error'
                                         })    
                                     }
                                   }
@@ -359,6 +360,64 @@ const { rejects } = require('assert');
                                 };
                                 
 
+    // API for login both Doctor and patient using user type
+                                        const loginPD = async (req, res) => {
+                                            const { email, password, userType } = req.body;
+                                        
+                                            // Define the column names based on userType
+                                            const emailColumn = userType === 'patient' ? 'Email' : 'Email';
+                                            const passwordColumn = userType === 'patient' ? 'Password' : 'password';
+                                        
+                                            // Define SQL query based on user type
+                                            const sql = userType === 'patient' ? 'SELECT * FROM patient WHERE Email = ?' : 'SELECT * FROM doctor WHERE Email = ?';
+                                        
+                                            con.query(sql, [email], (error, result) => {
+                                                if (error) {
+                                                    res.status(500).json({
+                                                        success: false,
+                                                        message: 'Error querying the database'
+                                                    });
+                                                } else {
+                                                    if (result.length === 0) {
+                                                        res.status(401).json({
+                                                            success: false,
+                                                            message: 'Email not found'
+                                                        });
+                                                    } else {
+                                                        const hashedPassword = result[0][passwordColumn];
+                                                        bcrypt.compare(password, hashedPassword, (error, isMatch) => {
+                                                            if (error) {
+                                                                res.status(500).json({
+                                                                    success: false,
+                                                                    message: 'Error comparing passwords'
+                                                                });
+                                                            } else if (!isMatch) {
+                                                                res.status(401).json({
+                                                                    success: false,
+                                                                    message: 'Incorrect password'
+                                                                });
+                                                            } else {
+                                                                // Set the session based on userType
+                                                                req.session.user = result[0];
+                                        
+                                                                // Log a message to the console
+                                                                console.log(`${userType} session generated:`, result[0]);
+                                        
+                                                                // Passwords match, login successful
+                                                                res.status(200).json({
+                                                                    success: true,
+                                                                    message: `${userType} logged in successfully`,
+                                                                    user_details: result[0],
+                                                                    userType : userType
+                                                                });
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            });
+                                        };
+                                        
+
 
         module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass  , 
-                       seeAppointments , createSchedule , myRatings}
+                       seeAppointments , createSchedule , myRatings , loginPD  }

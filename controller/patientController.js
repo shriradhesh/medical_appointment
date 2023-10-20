@@ -48,26 +48,26 @@ const googleMapClient = createClient({
                                                     const emailCheck = 'SELECT COUNT(*) AS count FROM patient WHERE Email = ? ';
                                                     con.query(emailCheck, [Email], function (error, result) {
                                                         if (error) {
-                                                            throw error;
+                                                            throw error
                                                         } else {
                                                             if (result[0].count > 0) {
-                                                                res.status(400).json({ success: false, error: 'Email already Exists' });
+                                                                res.status(400).json({ success: false, message: 'Email already Exists' });
                                                             } else {
                                                                 bcrypt.hash(Password, 10, function (error, hashedPassword) {
                                                                     if (error) {
                                                                         console.error('Error hashing Password', Error);
-                                                                        res.status(500).json({ success: false, Error: 'Error hashing Password' });
+                                                                        res.status(500).json({ success: false, message: 'Error hashing Password' });
                                                                     } else {
                                                                         const sql = 'INSERT INTO patient (FirstName, LastName, Age, Gender, Address, Email, Password, Phone_no) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
                                                                         con.query(sql, [FirstName, LastName, Age, Gender, Address, Email, hashedPassword, Phone_no], function (error, result) {
                                                                             if (error) {
-                                                                                res.status(400).json({ success: false, Error: 'There is an error' });
+                                                                                res.status(400).json({ success: false, message: 'There is an error' });
                                                                             } else {
                                                                                 // Fetch the newly registered patient details
                                                                                 const getPatientDetailsSQL = 'SELECT * FROM patient WHERE Email = ?';
                                                                                 con.query(getPatientDetailsSQL, [Email], function (error, patientDetails) {
                                                                                     if (error) {
-                                                                                        res.status(400).json({ success: false, Error: 'Error fetching patient details' });
+                                                                                        res.status(400).json({ success: false, message: 'Error fetching patient details' });
                                                                                     } else {
                                                                                         res.status(200).json({
                                                                                             success: true,
@@ -92,7 +92,7 @@ const googleMapClient = createClient({
                                             
                                                 con.query(sql, (error, result) => {
                                                 if (error) {
-                                                    res.status(500).json({success : false , err: 'Error while getting all  Patient data'});
+                                                    res.status(500).json({success : false , message: 'Error while getting all  Patient data'});
                                                 } else {
                                                     res.status(200).json({success : true , message : ' ALL Patient data ', all_Patient : result });
                                                 }
@@ -106,7 +106,7 @@ const googleMapClient = createClient({
                                             con.query(sql , (error , result)=>{
                                                 if(error){
                                                     res.status(500).json({ success : false,
-                                                                         error : 'Error while getting Patient'})
+                                                        message : 'Error while getting Patient'})
                                                 }
                                                 else
                                                 {
@@ -114,7 +114,7 @@ const googleMapClient = createClient({
                                                     {
                                                         res.status(404).json({
                                                                   success : false ,
-                                                                 error : 'Invalid patient Id'
+                                                                  message : 'Invalid patient Id'
                                                         })
                                                     }
                                                     else
@@ -135,18 +135,18 @@ const googleMapClient = createClient({
                                                         
                                                             con.query(sql, [Email], function (error, results) {
                                                             if (error) {
-                                                                res.status(500).json({ success: false, error: 'Error querying the database' });
+                                                                res.status(500).json({ success: false, message: 'Error querying the database' });
                                                             } else {
                                                                 if (results.length === 0) {
-                                                                res.status(401).json({ success: false, error: 'Email not found' });
+                                                                res.status(401).json({ success: false, message: 'Email not found' });
                                                                 } else {
                                                                 const hashedPassword = results[0].Password;
                                                         
                                                                 bcrypt.compare(Password, hashedPassword, function (error, isMatch) {
                                                                     if (error) {
-                                                                    res.status(500).json({ success: false, error: 'Error comparing passwords' });
+                                                                    res.status(500).json({ success: false, message: 'Error comparing passwords' });
                                                                     } else if (!isMatch) {
-                                                                    res.status(401).json({ success: false, error: 'Incorrect password' });
+                                                                    res.status(401).json({ success: false, message: 'Incorrect password' });
                                                                     } else {
                                                                     // Set the patient session
                                                                     req.session.patient = results[0];
@@ -178,7 +178,7 @@ const googleMapClient = createClient({
                                                         if(newPassword !== confirmPassword)
                                                         {
                                                             return res.status(400).json({ success : false ,
-                                                                                      error : 'password do not match'})                                                         
+                                                                message : 'password do not match'})                                                         
                                                               
                                                              
                                                         }
@@ -187,7 +187,7 @@ const googleMapClient = createClient({
                                                         con.query(sql , [Email] , async (error , result)=>{
                                                             if(error){
                                                                 return res.status(400).json({ success : false ,
-                                                                                              error : 'there is an error to find patient'})
+                                                                    message : 'there is an error to find patient'})
                                                             }
                                                             if(result.length === 0)
                                                             {
@@ -205,12 +205,12 @@ const googleMapClient = createClient({
                                                                 if(error){
                                                                     return res.status(400).json({
                                                                                             success : flase ,
-                                                                                            error : 'there is an error to match the password '
+                                                                                            message : 'there is an error to match the password '
                                                                     })
                                                                 }
                                                                         if(!isOldPasswordValid) {
                                                                             return  res.status(400).json({ success : false ,
-                                                                                                     error : 'Old password Incorrect '})
+                                                                                message : 'Old password Incorrect '})
                                                                         }
 
                                                                            // Encrypt New Password
@@ -237,85 +237,85 @@ const googleMapClient = createClient({
                                                                         catch(error)
                                                                         {
                                                                                 return res.status(500).json({success : false ,
-                                                                                                            error : 'Internal server error'                                         
+                                                                                    message : 'Internal server error'                                         
                                                                                 })
                                                                         }
                                                                     }
   // APi for generating and sending password reset link
                 
-                                            const forgetPassToken = async (req, res) => {
-                                                try {
-                                                const { Email } = req.body;
-                                            
-                                                if (!Email || !isValidEmail(Email)) {
-                                                    return res.status(400).json({ success: false, error: 'Valid Email is required' });
-                                                }
-                                            
-                                                // Check if the user exists based on the provided email
-                                                const patientQuery = 'SELECT * FROM patient WHERE Email = ?';
-                                                con.query(patientQuery, [Email], async (error, results) => {
-                                                    if (error) {
-                                                    return res.status(500).json({ success: false, error: 'An error occurred' });
+                                                const forgetPassToken = async (req, res) => {
+                                                    try {
+                                                    const { Email } = req.body;
+
+                                                    if (!Email || !isValidEmail(Email)) {
+                                                        return res.status(400).json({ success: false, error: 'Valid Email is required' });
                                                     }
-                                            
-                                                    if (results.length === 0) {
-                                                    return res.status(404).json({ success: false, error: 'Patient not found' });
-                                                    }
-                                            
-                                                    const patient = results[0];
-                                            
-                                                    // Check if a password reset token already exists for the patient
-                                                    const tokenQuery = 'SELECT * FROM tokenschema WHERE patientId = ?';
-                                                    con.query(tokenQuery, [patient.id], async (error, tokenResults) => {
-                                                    if (error) {
+
+                                                    // Check if the user exists based on the provided email
+                                                    const patientQuery = 'SELECT * FROM patient WHERE Email = ?';
+                                                    con.query(patientQuery, [Email], async (error, results) => {
+                                                        if (error) {
                                                         return res.status(500).json({ success: false, error: 'An error occurred' });
-                                                    }
-                                            
-                                                    let token;
-                                            
-                                                    if (tokenResults.length === 0) {
-                                                        token = crypto.randomBytes(32).toString('hex');
-                                                        const insertTokenQuery = 'INSERT INTO tokenschema (patientId, token) VALUES (?, ?)';
-                                                        con.query(insertTokenQuery, [patient.patientId, token], (error) => {
+                                                        }
+
+                                                        if (results.length === 0) {
+                                                        return res.status(404).json({ success: false, error: 'Patient not found' });
+                                                        }
+
+                                                        const patient = results[0];
+
+                                                        // Check if a password reset token already exists for the patient
+                                                        const tokenQuery = 'SELECT * FROM tokenschema WHERE patientId = ?';
+                                                        con.query(tokenQuery, [patient.patientId], async (error, tokenResults) => {
                                                         if (error) {
                                                             return res.status(500).json({ success: false, error: 'An error occurred' });
                                                         }
-                                            
-                                                        const resetLink = `${process.env.BASE_URL}/password-reset/${patient.patientId}/${token}`;
-                                                        sendEmails(patient.Email, 'Password Reset', resetLink);
-                                            
-                                                        res.status(200).json({
+
+                                                        let token;
+
+                                                        if (tokenResults.length === 0) {
+                                                            token = crypto.randomBytes(32).toString('hex');
+                                                            const insertTokenQuery = 'INSERT INTO tokenschema (patientId, token) VALUES (?, ?)';
+                                                            con.query(insertTokenQuery, [patient.patientId, token], (error) => {
+                                                            if (error) {
+                                                                return res.status(500).json({ success: false, error: 'An error occurred' });
+                                                            }
+
+                                                            const resetLink = `${process.env.BASE_URL}/password-reset/${patient.patientId}/${token}`;
+                                                            sendEmails(patient.Email, 'Password Reset', resetLink);
+
+                                                            res.status(200).json({
+                                                                success: true,
+                                                                message: 'Password reset link sent to your email account',
+                                                            });
+                                                            });
+                                                        } else {
+                                                            token = tokenResults[0].token;
+
+                                                            const resetLink = `${process.env.BASE_URL}/password-reset/${patient.patientId}/${token}`;
+                                                            sendEmails(patient.Email, 'Password Reset', resetLink);
+
+                                                            res.status(200).json({
                                                             success: true,
                                                             message: 'Password reset link sent to your email account',
+                                                            });
+                                                        }
                                                         });
-                                                        });
-                                                    } else {
-                                                        token = tokenResults[0].token;
-                                            
-                                                        const resetLink = `${process.env.BASE_URL}/password-reset/${patient.patientId}/${token}`;
-                                                        sendEmails(patient.Email, 'Password Reset', resetLink);
-                                            
-                                                        res.status(200).json({
-                                                        success: true,
-                                                        message: 'Password reset link sent to your email account',
-                                                        });
-                                                    }
                                                     });
-                                                });
-                                                } catch (error) {
-                                                res.status(500).json({
-                                                    success: false,
-                                                    error: 'An error occurred',
-                                                });
+                                                    } catch (error) {
+                                                    res.status(500).json({
+                                                        success: false,
+                                                        error: 'An error occurred',
+                                                    });
+                                                    }
+                                                };
+
+                                                function isValidEmail(Email) {
+                                                    // Email validation
+                                                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                                    return emailRegex.test(Email);
                                                 }
-                                            };
-                                            
-                                            function isValidEmail(Email) {
-                                                // Email validation
-                                                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                                                return emailRegex.test(Email);
-                                            }
-                                              
+                                                                                            
                                             
     // API for reseting the forgetpassword using token
                                 const reset_Password = async (req, res) => {
@@ -326,18 +326,18 @@ const googleMapClient = createClient({
 
                                 
                                     if (!Password) {
-                                        return res.status(400).json({ success: false, error: 'Password is required' });
+                                        return res.status(400).json({ success: false, message: 'Password is required' });
                                     }
                                 
                                     // Check if the patient exists based on ID
                                     const patientQuery = 'SELECT * FROM patient WHERE patientId = ?';
                                     con.query(patientQuery, [patientId], async (error, patientResults) => {
                                         if (error) {
-                                        return res.status(500).json({ success: false, error: 'An error occurred' });
+                                        return res.status(500).json({ success: false, message: 'An error occurred' });
                                         }
                                          console.log(patientResults);
                                         if (patientResults.length === 0) {
-                                        return res.status(400).json({ success: false, error: 'Invalid Link or Expired' });
+                                        return res.status(400).json({ success: false, message: 'Invalid Link or Expired' });
                                         }
                                 
                                         const patient = patientResults[0];
@@ -346,12 +346,12 @@ const googleMapClient = createClient({
                                         const tokenQuery = 'SELECT * FROM tokenschema WHERE patientId = ? AND token = ?';
                                         con.query(tokenQuery, [patient.patientId, tokenValue], async (error, tokenResults) => {
                                         if (error) {
-                                            return res.status(500).json({ success: false, error: 'An error occurred' });
+                                            return res.status(500).json({ success: false, message: 'An error occurred' });
                                         }
                                       
                                 
                                         if (tokenResults.length === 0) {
-                                            return res.status(400).json({ success: false, error: 'Invalid link or expired' });
+                                            return res.status(400).json({ success: false, message: 'Invalid link or expired' });
                                         }
                                 
                                         const tokenRecord = tokenResults[0];
@@ -363,14 +363,14 @@ const googleMapClient = createClient({
                                         const updatePasswordQuery = 'UPDATE patient SET Password = ? WHERE patientId = ?';
                                         con.query(updatePasswordQuery, [hashedPassword, patient.id], async (error) => {
                                             if (error) {
-                                            return res.status(500).json({ success: false, error: 'An error occurred' });
+                                            return res.status(500).json({ success: false, message: 'An error occurred' });
                                             }
                                 
                                             // Delete the used token
                                             const deleteTokenQuery = 'DELETE FROM tokenschema WHERE patientId = ? AND token = ?';
                                             con.query(deleteTokenQuery, [patient.patientId, tokenValue], async (error) => {
                                             if (error) {
-                                                return res.status(500).json({ success: false, error: 'An error occurred' });
+                                                return res.status(500).json({ success: false, message: 'An error occurred' });
                                             }
                                 
                                             res.status(200).json({ success: true, message: 'Password reset successfully' });
@@ -380,7 +380,7 @@ const googleMapClient = createClient({
                                     });
                                     } catch (error) {
                                     console.error('Error: ', error);
-                                    res.status(500).json({ success: false, error: 'An error occurred' });
+                                    res.status(500).json({ success: false, message: 'An error occurred' });
                                     }
                                 };
                                 
@@ -424,7 +424,7 @@ const googleMapClient = createClient({
                                             if (error) {
                                             res.status(500).json({
                                                 success: false,
-                                                error: 'Error while searching for Doctors',
+                                                message: 'Error while searching for Doctors',
                                             });
                                             } else {
                                             
@@ -447,7 +447,7 @@ const googleMapClient = createClient({
                                         console.error(error);
                                         res.status(500).json({
                                             success: false,
-                                            error: 'There is an error',
+                                            message: 'There is an error',
                                         });
                                         }
                                     };
@@ -465,7 +465,7 @@ const googleMapClient = createClient({
                                                 {
                                                     res.status(500).json({
                                                         success : false ,
-                                                         error : 'Error while getting doctor details'
+                                                        message : 'Error while getting doctor details'
                                                     })
                                                 }
                                                 else
@@ -474,7 +474,7 @@ const googleMapClient = createClient({
                                                     {
                                                         res.status(400).json({
                                                                      success : false,
-                                                                     error : 'Invalid Doctor Id'
+                                                                     message : 'Invalid Doctor Id'
                                                         })
                                                     }
                                                     else
@@ -491,7 +491,7 @@ const googleMapClient = createClient({
                                         } catch (error) {
                                             res.status(500).json({
                                                 success : false,
-                                                error : ' there is an error'
+                                                message : ' there is an error'
                                             })
                                         }
                                       }
@@ -516,13 +516,13 @@ const googleMapClient = createClient({
                                                 con.query(availabilitySql, availabilityValues, async (error, results) => {
                                                     if (error) {
                                                         console.error('Error checking appointment availability:', error);
-                                                        res.status(500).json({ success: false, error: 'Error while checking appointment availability' });
+                                                        res.status(500).json({ success: false, message: 'Error while checking appointment availability' });
                                                         return;
                                                     }
                                         
                                                     if (results.length === 0) {
                                                         console.log('Slot not available');
-                                                        res.status(400).json({ success: false, error: 'Appointment slot is not available' });
+                                                        res.status(400).json({ success: false, message: 'Appointment slot is not available' });
                                                         return;
                                                     }
                                         
@@ -556,7 +556,7 @@ const googleMapClient = createClient({
                                                     con.query(insertSql, insertValues, (error, result) => {
                                                         if (error) {
                                                             console.error('Error booking appointment:', error);
-                                                            res.status(500).json({ success: false, error: 'Error while booking appointment' });
+                                                            res.status(500).json({ success: false, message: 'Error while booking appointment' });
                                                             return;
                                                         }
                                                         const qrCodeImage = fs.readFileSync(qrCodeFilename);
@@ -571,7 +571,7 @@ const googleMapClient = createClient({
                                                 });
                                             } catch (error) {
                                                 console.error('Error in booking appointment:', error);
-                                                res.status(500).json({ success: false, error: 'There is an error' });
+                                                res.status(500).json({ success: false, message: 'There is an error' });
                                             }
                                         }
 
@@ -619,7 +619,7 @@ const googleMapClient = createClient({
                                                                 {
                                                                     res.status(500).json({
                                                                         success : false ,
-                                                                        error : 'Error while checking doctor availability'
+                                                                        message : 'Error while checking doctor availability'
                                                                     })
                                                                 }
                                                                 else
@@ -630,7 +630,7 @@ const googleMapClient = createClient({
                                                                     {
                                                                         res.status(400).json({
                                                                                     success : false,
-                                                                                    error : 'Doctor is not available on selected Date'
+                                                                                    message : 'Doctor is not available on selected Date'
                                                                         })
                                                                     }
                                                                     else
@@ -645,7 +645,7 @@ const googleMapClient = createClient({
                                                                             {
                                                                                 res.status(500).json({
                                                                                     success : false ,
-                                                                                    error : 'Error while getting doctor schedule details'
+                                                                                    message : 'Error while getting doctor schedule details'
                                                                                 })
                                                                             }  else
                                                                             {                                                                     
@@ -664,7 +664,7 @@ const googleMapClient = createClient({
                                                         } catch (error) {
                                                             res.status(500).json({
                                                                 success : false,
-                                                                error : ' there is an error'
+                                                                message : ' there is an error'
                                                             })
                                                         }
                                                     }
@@ -682,7 +682,7 @@ const googleMapClient = createClient({
                                                                 if (isNaN(patientId)) {
                                                                     return res.status(400).json({
                                                                     success: false,
-                                                                    error: 'Invalid patientId',
+                                                                    message: 'Invalid patientId',
                                                                     });
                                                                 }
                                                             
@@ -690,7 +690,7 @@ const googleMapClient = createClient({
                                                                 if (rating < 1 || rating > 5) {
                                                                     return res.status(400).json({
                                                                     success: false,
-                                                                    error: 'Invalid rating. Rating must be between 1 and 5.',
+                                                                    message: 'Invalid rating. Rating must be between 1 and 5.',
                                                                     });
                                                                 }
                                                             
@@ -700,7 +700,7 @@ const googleMapClient = createClient({
                                                                     if (error) {
                                                                     res.status(400).json({
                                                                         success: false,
-                                                                        error: 'Error while checking for existing rating',
+                                                                        message: 'Error while checking for existing rating',
                                                                     });
                                                                     } else if (result.length > 0) {
                                                                     // Update the existing rating
@@ -709,7 +709,7 @@ const googleMapClient = createClient({
                                                                         if (error) {
                                                                         res.status(400).json({
                                                                             success: false,
-                                                                            error: 'Error while updating rating',
+                                                                            message: 'Error while updating rating',
                                                                         });
                                                                         } else {
                                                                         res.status(200).json({
@@ -726,7 +726,7 @@ const googleMapClient = createClient({
                                                                         if (error) {
                                                                         res.status(400).json({
                                                                             success: false,
-                                                                            error: 'Error while giving rating to the doctor',
+                                                                            message: 'Error while giving rating to the doctor',
                                                                         });
                                                                         } else {
                                                                         res.status(200).json({
@@ -741,7 +741,7 @@ const googleMapClient = createClient({
                                                                 } catch (error) {
                                                                 res.status(500).json({
                                                                     success: false,
-                                                                    error: 'There is an error',
+                                                                    message: 'There is an error',
                                                                 });
                                                                 }
                                                             };
@@ -760,14 +760,14 @@ const googleMapClient = createClient({
                                     if (error) {
                                         return res.status(500).json({
                                             success: false,
-                                            error: 'Error while checking patient',
+                                            message: 'Error while checking patient',
                                         });
                                     }
                         
                                     if (patientResult.length === 0) {
                                         return res.status(400).json({
                                             success: false,
-                                            error: 'Invalid Patient Id',
+                                            message: 'Invalid Patient Id',
                                         });
                                     }
                         
@@ -775,14 +775,14 @@ const googleMapClient = createClient({
                                         if (error) {
                                             return res.status(500).json({
                                                 success: false,
-                                                error: 'Error while checking doctor',
+                                                message: 'Error while checking doctor',
                                             });
                                         }
                         
                                         if (doctorResult.length === 0) {
                                             return res.status(400).json({
                                                 success: false,
-                                                error: 'Invalid Doctor Id',
+                                                message: 'Invalid Doctor Id',
                                             });
                                         }
                         
@@ -794,14 +794,14 @@ const googleMapClient = createClient({
                                             if (error) {
                                                 return res.status(500).json({
                                                     success: false,
-                                                    error: 'Error while checking favorite status',
+                                                    message: 'Error while checking favorite status',
                                                 });
                                             }
                         
                                             if (favoriteResult.length > 0) {
                                                 return res.status(400).json({
                                                     success: false,
-                                                    error: 'Doctor is already a favorite of the patient',
+                                                    message: 'Doctor is already a favorite of the patient',
                                                 });
                                             }
                         
@@ -812,7 +812,7 @@ const googleMapClient = createClient({
                                                 if (error) {
                                                     return res.status(500).json({
                                                         success: false,
-                                                        error: 'Error while saving doctor as favorite',
+                                                        message: 'Error while saving doctor as favorite',
                                                     });
                                                 }
                         
@@ -828,7 +828,7 @@ const googleMapClient = createClient({
                             } catch (error) {
                                 res.status(500).json({
                                     success: false,
-                                    error: 'There is an error',
+                                    message: 'There is an error',
                                 });
                             }
                         };
@@ -854,7 +854,7 @@ const googleMapClient = createClient({
                                   if (result.length === 0) {
                                     return res.status(400).json({
                                       success: false,
-                                      error: "No doctor found",
+                                      message: "No doctor found",
                                     });
                                   }
                               
@@ -866,7 +866,7 @@ const googleMapClient = createClient({
                                 } catch (error) {
                                   return res.status(500).json({
                                     success: false,
-                                    error: "There is an error",
+                                    message: "There is an error",
                                   });
                                 }
                               };
@@ -877,13 +877,13 @@ const googleMapClient = createClient({
                                                     if (req.session.patient) {
                                                     req.session.destroy((err) => {
                                                         if (err) {
-                                                        res.status(500).json({ success: false, error: 'Error destroying the session' });
+                                                        res.status(500).json({ success: false, message: 'Error destroying the session' });
                                                         } else {
                                                         res.status(200).json({ success: true, message: 'Patient logged out successfully' });
                                                         }
                                                     });
                                                     } else {
-                                                    res.status(401).json({ success: false, error: 'No active session to log out' });
+                                                    res.status(401).json({ success: false, message: 'No active session to log out' });
                                                     }
                                                 };
       
@@ -912,12 +912,12 @@ const googleMapClient = createClient({
                                                             if (error) {
                                                                 return res.status(500).json({
                                                                     success: false,
-                                                                    error: "There is an error finding Appointments",
+                                                                    message: "There is an error finding Appointments",
                                                                 });
                                                             } else if (result.length === 0) {
                                                                 return res.status(400).json({
                                                                     success: false,
-                                                                    error: "No Appointments Found",
+                                                                    message: "No Appointments Found",
                                                                 });
                                                             } else {
                                                                 res.status(200).json({
@@ -931,7 +931,7 @@ const googleMapClient = createClient({
                                                     } catch (error) {
                                                         return res.status(500).json({
                                                             success: false,
-                                                            error: "There is an error",
+                                                            message: "There is an error",
                                                         });
                                                     }
                                                 };
@@ -1007,7 +1007,7 @@ const googleMapClient = createClient({
                                     {
                                         res.status(500).json({
                                             success: false,
-                                            error : 'error fatching Address'
+                                            message : 'error fatching Address'
                                         })
                                     }
                                     else
@@ -1019,7 +1019,7 @@ const googleMapClient = createClient({
                                               {
                                                 res.status(500).json({
                                                     success : false,
-                                                    error : 'direction error ', directionError
+                                                    message : 'direction error ', directionError
                                                 })
                                               }
                                               else
@@ -1048,7 +1048,7 @@ const googleMapClient = createClient({
                                     {
                                         res.status(500).json({
                                             success : false ,
-                                            error : 'Database error'
+                                            message : 'Database error'
                                         })
                                     }
 
@@ -1056,7 +1056,7 @@ const googleMapClient = createClient({
                                     {
                                         res.status(400).json({
                                             success : false,
-                                            error : 'patient not found with the given patient Id'
+                                            message : 'patient not found with the given patient Id'
                                         })
                                     }
                                     else
@@ -1075,7 +1075,7 @@ const googleMapClient = createClient({
                                         {
                                             res.status(500).json({
                                                 success : false ,
-                                                error : 'Error While update PHR record'
+                                                message : 'Error While update PHR record'
                                             })
                                         }
                                         else
@@ -1099,7 +1099,7 @@ const googleMapClient = createClient({
                                             {
                                                 res.status(500).json({
                                                     success : false ,
-                                                    error : 'error while uploading PHR record'
+                                                    message : 'error while uploading PHR record'
                                                 })
                                             }
                                             else

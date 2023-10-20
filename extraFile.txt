@@ -134,29 +134,47 @@ app.listen(3000, () => {
 .....
 
 
-router.post('/upload-phr-report', upload.single('phrFile'), (req, res) => {
-  const { Email } = req.body;
+const login = async (req, res) => {
+    const { email, password, userType } = req.body;
 
-  // Check if the patient with the provided email exists in the database.
-  const patientCheckSQL = 'SELECT patientId FROM patient WHERE Email = ?';
-  con.query(patientCheckSQL, [Email], (error, result) => {
-    if (error) {
-      res.status(500).json({ success: false, error: 'Database error' });
-    } else if (result.length === 0) {
-      res.status(400).json({ success: false, error: 'Patient not found' });
-    } else {
-      // Get the file path of the uploaded PHR report
-      const phrFilePath = req.file.path;
+    // Define the column names based on userType
+    const emailColumn = userType === 'patient' ? 'Email' : 'email';
+    const passwordColumn = userType === 'patient' ? 'Password' : 'password';
 
-      // Update the PHR_Record field with the file path
-      const updatePHRSQL = 'UPDATE patient SET PHR_Record = ? WHERE Email = ?';
-      con.query(updatePHRSQL, [phrFilePath, Email], (error, updateResult) => {
+    // Define the SQL query based on userType
+    const sql = userType === 'patient' ? 'SELECT * FROM patient WHERE Email = ?' : 'SELECT * FROM doctor WHERE email = ?';
+
+    con.query(sql, [email], function (error, results) {
         if (error) {
-          res.status(500).json({ success: false, error: 'Error updating PHR record' });
+            res.status(500).json({ success: false, message: 'Error querying the database' });
         } else {
-          res.status(200).json({ success: true, message: 'PHR report uploaded successfully' });
+            if (results.length === 0) {
+                res.status(401).json({ success: false, message: 'Email not found' });
+            } else {
+                const hashedPassword = results[0][passwordColumn];
+
+                bcrypt.compare(password, hashedPassword, function (error, isMatch) {
+                    if (error) {
+                        res.status(500).json({ success: false, message: 'Error comparing passwords' });
+                    } else if (!isMatch) {
+                        res.status(401).json({ success: false, message: 'Incorrect password' });
+                    } else {
+                        // Set the session based on userType
+                        req.session.user = results[0];
+
+                        // Log a message to the console
+                        console.log(`${userType} session generated:`, results[0]);
+
+                        // Passwords match, login successful
+                        res.status(200).json({
+                            success: true,
+                            message: `${userType} logged in successfully`,
+                            user_details: results[0],
+                        });
+                    }
+                });
+            }
         }
-      });
-    }
-  });
-});
+    });
+};
+

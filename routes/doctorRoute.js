@@ -20,6 +20,8 @@ const upload = require('../uploadImages')
                     router.post('/createSchedule/:doctorId', doctorController.createSchedule )
 // Api for check ratings
                      router.get('/myRatings/:doctorId' , doctorController.myRatings)
+// API for loginPD
+                    router.post('/loginPD', doctorController.loginPD)
                  
 
 

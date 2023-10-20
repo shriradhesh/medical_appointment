@@ -27,7 +27,7 @@ const admin = require('firebase-admin')
 //API for search Doctors
                    router.get('/searchDoctor', patientController.searchDoctor)
 // API for see Doctor Details
-                   router.post('/seeDoctorDetails/:doctorId', patientController.seeDoctorDetails )
+                   router.get('/seeDoctorDetails/:doctorId', patientController.seeDoctorDetails )
 // API for see Doctor Schedule 
                    router.get('/seeDoctorSchedule/:doctorId' , patientController.seeDoctorSchedule)
 // API for Book Appointment

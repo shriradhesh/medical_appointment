@@ -19,24 +19,24 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                     throw error;
                                                 } else {
                                                     if (result[0].count > 0) {
-                                                    res.status(400).json({ success: false, error: 'Username already exists' });
+                                                    res.status(400).json({ success: false, message : 'Username already exists' });
                                                     } else {
                                                     bcrypt.hash(password, 10, async (error, hashedPassword) => {
                                                         if (error) {
-                                                        res.status(500).json({ success: false, error: 'Error hashing password' });
+                                                        res.status(500).json({ success: false, message : 'Error hashing password' });
                                                         } else {                                                       
                                             
                                                         // Insert the new admin with hashed password and profileImage
                                                         const sql = 'INSERT INTO admin (username,email , password) VALUES (?,?,?)';
                                                         con.query(sql, [username,email , hashedPassword], (error, result) => {
                                                             if (error) {
-                                                            res.status(400).json({ success: false, error: 'There is an error' });
+                                                            res.status(400).json({ success: false, message : 'There is an error' });
                                                             } else {
                                                             // Fetch the newly registered admin details
                                                             const getAdminDetailsSQL = 'SELECT * FROM admin WHERE username = ?';
                                                             con.query(getAdminDetailsSQL, [username], (error, adminDetails) => {
                                                                 if (error) {
-                                                                res.status(400).json({ success: false, error: 'Error fetching admin details' });
+                                                                res.status(400).json({ success: false, message : 'Error fetching admin details' });
                                                                 } else {
                                                                 res.status(200).json({
                                                                     success: true,
@@ -67,19 +67,19 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                     con.query(sql, [username], function (error, results) {
                                                 
                                                     if (error) {
-                                                        res.status(500).json({ success: false, error: 'Error querying the database' });
+                                                        res.status(500).json({ success: false, message : 'Error querying the database' });
                                                     } else {
                                                         if (results.length === 0) {
-                                                        res.status(401).json({ success: false, error: 'username not found' });
+                                                        res.status(401).json({ success: false, message : 'username not found' });
                                                         } else {
                                                         const hashedPassword = results[0].password;
                                                         
                                                         bcrypt.compare(password, hashedPassword, function (error, isMatch) {
                                                             if (error) {
-                                                            res.status(500).json({ success: false, error: 'Error comparing passwords' });
+                                                            res.status(500).json({ success: false, message : 'Error comparing passwords' });
                                                             } else if (!isMatch) {
                                                             
-                                                            res.status(401).json({ success: false, error: 'Incorrect password' });
+                                                            res.status(401).json({ success: false, message : 'Incorrect password' });
                                                             } else {
                                                             // Passwords match, login successful
                                                             res.status(200).json({
@@ -105,7 +105,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         if(newPassword !== confirmPassword)
                                                         {
                                                             return res.status(400).json({ success : false ,
-                                                                                      error : 'password do not match'})                                                         
+                                                                                      message : 'password do not match'})                                                         
                                                               
                                                              
                                                         }
@@ -114,13 +114,13 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         con.query(sql , [email] , async (error , result)=>{
                                                             if(error){
                                                                 return res.status(400).json({ success : false ,
-                                                                                              error : 'there is an error to find Admin'})
+                                                                                              message : 'there is an error to find Admin'})
                                                             }
                                                             if(result.length === 0)
                                                             {
                                                                 return res.status(400).json({
                                                                                        success : false ,
-                                                                                       error : ' Admin not Found'
+                                                                                       message : ' Admin not Found'
                                                                 })
                                                             }
                                                                const admins = result[0]
@@ -132,12 +132,12 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                                 if(error){
                                                                     return res.status(400).json({
                                                                                             success : flase ,
-                                                                                            error : 'there is an error to match the password '
+                                                                                            message : 'there is an error to match the password '
                                                                     })
                                                                 }
                                                                         if(!isOldPasswordValid) {
                                                                             return  res.status(400).json({ success : false ,
-                                                                                                     error : 'Old password Incorrect '})
+                                                                                                     message : 'Old password Incorrect '})
                                                                         }
 
                                                                            // Encrypt New Password
@@ -164,7 +164,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                                         catch(error)
                                                                         {
                                                                                 return res.status(500).json({success : false ,
-                                                                                                            error : 'Internal server error'                                         
+                                                                                                            message : 'Internal server error'                                         
                                                                                 })
                                                                         }
                                                                     }
@@ -177,18 +177,18 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             const { email } = req.body;
                                     
                                             if (!email || !isValidEmail(email)) {
-                                                return res.status(400).json({ success: false, error: 'Valid Email is required' });
+                                                return res.status(400).json({ success: false, message : 'Valid Email is required' });
                                             }
                                     
                                             // Check if the admin exists based on the provided email
                                             const adminQuery = 'SELECT * FROM admin WHERE email = ?';
                                             con.query(adminQuery, [email], async (error, results) => {
                                                 if (error) {
-                                                    return res.status(500).json({ success: false, error: 'An error occurred' });
+                                                    return res.status(500).json({ success: false, message : 'An error occurred' });
                                                 }
                                     
                                                 if (results.length === 0) {
-                                                    return res.status(404).json({ success: false, error: 'Admin not found' });
+                                                    return res.status(404).json({ success: false, message : 'Admin not found' });
                                                 }
                                     
                                                 const admin = results[0];
@@ -197,7 +197,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                 const tokenQuery = 'SELECT * FROM admin_tokenschema WHERE adminId = ?';
                                                 con.query(tokenQuery, [admin.Id], async (error, tokenResults) => {
                                                     if (error) {
-                                                        return res.status(500).json({ success: false, error: 'An error occurred' });
+                                                        return res.status(500).json({ success: false, message : 'An error occurred' });
                                                     }
                                     
                                                     let token;
@@ -207,7 +207,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         const insertTokenQuery = 'INSERT INTO admin_tokenschema (adminId, token) VALUES (?, ?)';
                                                         con.query(insertTokenQuery, [admin.Id, token], (error) => {
                                                             if (error) {
-                                                                return res.status(500).json({ success: false, error: 'An error occurred' });
+                                                                return res.status(500).json({ success: false, message : 'An error occurred' });
                                                             }
                                     
                                                             const resetLink = `${process.env.BASE_URL}/password-reset/${admin.Id}/${token}`;
@@ -234,7 +234,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                         } catch (error) {
                                             res.status(500).json({
                                                 success: false,
-                                                error: 'An error occurred',
+                                                message : 'An error occurred',
                                             });
                                         }
                                     };
@@ -255,18 +255,18 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
 
                         
                             if (!password) {
-                                return res.status(400).json({ success: false, error: 'Password is required' });
+                                return res.status(400).json({ success: false, message : 'Password is required' });
                             }
                         
                             // Check if the patient exists based on ID
                             const adminQuery = 'SELECT * FROM admin WHERE Id = ?';
                             con.query(adminQuery, [adminId], async (error, adminResult) => {
                                 if (error) {
-                                return res.status(500).json({ success: false, error: 'An error occurred' });
+                                return res.status(500).json({ success: false, message : 'An error occurred' });
                                 }
                         
                                 if (adminResult.length === 0) {
-                                return res.status(400).json({ success: false, error: 'Invalid Link or Expired' });
+                                return res.status(400).json({ success: false, message : 'Invalid Link or Expired' });
                                 }
                         
                                 const admins = adminResult[0];
@@ -275,12 +275,12 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                 const tokenQuery = 'SELECT * FROM admin_tokenschema WHERE adminId = ? AND token = ?';
                                 con.query(tokenQuery, [admins.Id, tokenValue], async (error, tokenResults) => {
                                 if (error) {
-                                    return res.status(500).json({ success: false, error: 'An error occurred' });
+                                    return res.status(500).json({ success: false, message : 'An error occurred' });
                                 }
                             
                         
                                 if (tokenResults.length === 0) {
-                                    return res.status(400).json({ success: false, error: 'Invalid link or expired' });
+                                    return res.status(400).json({ success: false, message : 'Invalid link or expired' });
                                 }
                         
                                 const tokenRecord = tokenResults[0];
@@ -292,14 +292,14 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                 const updatePasswordQuery = 'UPDATE admin SET password = ? WHERE Id = ?';
                                 con.query(updatePasswordQuery, [hashedPassword, admins.Id], async (error) => {
                                     if (error) {
-                                    return res.status(500).json({ success: false, error: 'An error occurred' });
+                                    return res.status(500).json({ success: false, message : 'An error occurred' });
                                     }
                         
                                     // Delete the used token
                                     const deleteTokenQuery = 'DELETE FROM admin_tokenschema WHERE adminId = ? AND token = ?';
                                     con.query(deleteTokenQuery, [admins.Id, tokenValue], async (error) => {
                                     if (error) {
-                                        return res.status(500).json({ success: false, error: 'An error occurred' });
+                                        return res.status(500).json({ success: false, message : 'An error occurred' });
                                     }
                         
                                     res.status(200).json({ success: true, message: 'Password reset successfully' });
@@ -308,8 +308,8 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                 });
                             });
                             } catch (error) {
-                            console.error('Error: ', error);
-                            res.status(500).json({ success: false, error: 'An error occurred' });
+                            console.error('message : ', error);
+                            res.status(500).json({ success: false, message : 'An error occurred' });
                             }
                         };
 
@@ -326,45 +326,65 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                 const adminQuery = 'SELECT * FROM admin WHERE Id = ?';
                                                 con.query(adminQuery, [Id], async (error, results) => {
                                                     if (error) {
-                                                        return res.status(500).json({ success: false, error: 'An error occurred' });
+                                                        return res.status(500).json({ success: false, message: 'An error occurred' });
                                                     }
                                         
                                                     if (results.length === 0) {
-                                                        return res.status(404).json({ success: false, error: 'Admin not found' });
+                                                        return res.status(404).json({ success: false, message: 'Admin not found' });
                                                     }
                                         
                                                     if (!req.file) {
                                                         return res.status(400).json({
                                                             success: false,
-                                                            error: 'Please upload your profile',
+                                                            message: 'Please upload your profile',
                                                         });
                                                     }
                                         
                                                     const imagePath = req.file.path;
                                         
-                                                    // Update the admin's profile image
-                                                    const updateQuery = 'UPDATE admin SET profileImage = ? WHERE Id = ?';
-                                                    con.query(updateQuery, [imagePath, Id], (updateError, updateResults) => {
-                                                        if (updateError) {
-                                                            return res.status(500).json({
-                                                                success: false,
-                                                                error: 'Error updating profile image',
-                                                            });
-                                                        }
+                                                    // Check if profileImage is already set for the admin
+                                                    if (results[0].profileImage) {
+                                                        // Update the admin's profile image
+                                                        const updateQuery = 'UPDATE admin SET profileImage = ? WHERE Id = ?';
+                                                        con.query(updateQuery, [imagePath, Id], (updateError, updateResults) => {
+                                                            if (updateError) {
+                                                                return res.status(500).json({
+                                                                    success: false,
+                                                                    message: 'Error updating profile image',
+                                                                });
+                                                            }
                                         
-                                                        res.status(200).json({
-                                                            success: true,
-                                                            message: 'Profile image uploaded successfully',
+                                                            res.status(200).json({
+                                                                success: true,
+                                                                message: 'Profile image updated successfully',
+                                                            });
                                                         });
-                                                    });
+                                                    } else {
+                                                        // Create the admin's profile image
+                                                        const insertQuery = 'UPDATE admin SET profileImage = ? WHERE Id = ?';
+                                                        con.query(insertQuery, [imagePath, Id], (insertError, insertResults) => {
+                                                            if (insertError) {
+                                                                return res.status(500).json({
+                                                                    success: false,
+                                                                    message: 'Error creating profile image',
+                                                                });
+                                                            }
+                                        
+                                                            res.status(200).json({
+                                                                success: true,
+                                                                message: 'Profile image uploaded successfully',
+                                                            });
+                                                        });
+                                                    }
                                                 });
                                             } catch (error) {
                                                 res.status(500).json({
                                                     success: false,
-                                                    error: 'There is an error',
+                                                    message: 'There is an error',
                                                 });
                                             }
                                         };
+    
     
                                                               
      
@@ -406,7 +426,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             {
                                                 return res.status(500).json({
                                                             success : false ,
-                                                            error : 'Database error for license Number'
+                                                            message : 'Database error for license Number'
                                                 })
                                             }
                                             const licenseNumberCount = result[0].licenseNumberCount
@@ -414,7 +434,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             {
                                                 return res.status(400).json({
                                                     success : true ,
-                                                    error : 'license Number Already exists'
+                                                    message : 'license Number Already exists'
                                                 })
                                             }
                                         })
@@ -427,7 +447,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             if (error) {
                                                 return res.status(500).json({
                                                     success: false,
-                                                    error: 'Database error for email'
+                                                    message : 'Database error for email'
                                                 });
                                             }
                                 
@@ -436,7 +456,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             if (emailCount > 0) {
                                                 return res.status(400).json({
                                                     success: false,
-                                                    error: 'Email Already Exists'
+                                                    message : 'Email Already Exists'
                                                 });
                                             }                                         
                                         
@@ -467,7 +487,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                     if (error) {
                                                         res.status(500).json({
                                                             success: false,
-                                                            error: 'There is an error adding the Doctor'
+                                                            message : 'There is an error adding the Doctor'
                                                         });
                                                     } else {
                                                         const insertedDoctor = {
@@ -501,7 +521,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                         console.error(error);
                                         res.status(500).json({
                                             success: false,
-                                            error: 'There is an error'
+                                            message : 'There is an error'
                                         });
                                     }
                                 };
@@ -513,7 +533,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                             
                                 con.query(sql, (err, result) => {
                                 if (err) {
-                                    res.status(500).json({ err: 'Error while getting all doctor', error: err });
+                                    res.status(500).json({ message : 'Error while getting all doctor', message : err });
                                 } else {
                                     res.status(200).json({success : true ,  message : ' ALL doctor ' , allDoctor : result });
                                 }
@@ -527,7 +547,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                     if(error)
                                     {
                                         res.status(500).json({ success : false ,
-                                                             error : ' Error while getting doctor details'})
+                                                             message : ' Error while getting doctor details'})
                                     }
                                     else
                                     {
@@ -535,7 +555,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                         {
                                             res.status(400).json({
                                                        success : false,
-                                                       error : 'Invalid doctor ID'
+                                                       message : 'Invalid doctor ID'
                                             })
                                         }
                                         else
@@ -564,13 +584,13 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         if (error) {
                                                             return res.status(500).json({
                                                                 success: false,
-                                                                error: 'Error while checking doctor ID',
+                                                                message : 'Error while checking doctor ID',
                                                             });
                                                         }
                                                         if (checkResult.length === 0) {
                                                             return res.status(400).json({
                                                                 success: false,
-                                                                error: 'Doctor Id not exists',
+                                                                message : 'Doctor Id not exists',
                                                             });
                                                         }
                                             
@@ -594,7 +614,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                             if (error) {
                                                                 return res.status(500).json({
                                                                     success: false,
-                                                                    error: 'Error while updating the doctor records',
+                                                                    message : 'Error while updating the doctor records',
                                                                 });
                                                             }
                                                             return res.status(200).json({
@@ -606,7 +626,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                 } catch (error) {
                                                     res.status(500).json({
                                                         success: false,
-                                                        error: 'There is an error',
+                                                        message : 'There is an error',
                                                     });
                                                 }
                                             };
@@ -623,14 +643,14 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             if (error) {
                                                 return res.status(500).json({
                                                 success: false,
-                                                error: 'Internal server error',
+                                                message : 'Internal server error',
                                                 });
                                             }
                                             
                                             if (result.length === 0) {
                                                 return res.status(404).json({
                                                 success: false,
-                                                error: 'Doctor not found',
+                                                message : 'Doctor not found',
                                                 });
                                             }
                                             
@@ -641,7 +661,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                 if (updateError) {
                                                 return res.status(500).json({
                                                     success: false,
-                                                    error: 'Internal server error',
+                                                    message : 'Internal server error',
                                                 });
                                                 }
                                                 
@@ -665,13 +685,13 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                 if (error) {
                                                     return res.status(500).json({
                                                         success: false,
-                                                        error: 'Error while checking Doctor Id'
+                                                        message : 'Error while checking Doctor Id'
                                                     });
                                                 }
                                                 if (checkResult.length === 0) {
                                                     return res.status(400).json({
                                                         success: false,
-                                                        error: 'Doctor Id not exist or status is not 0'
+                                                        message : 'Doctor Id not exist or status is not 0'
                                                     });
                                                 } else {
                                                     const deleteSql = `DELETE FROM doctor WHERE doctorId = ?`;
@@ -680,7 +700,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         if (error) {
                                                             return res.status(500).json({
                                                                 success: false,
-                                                                error: 'Error while deleting doctor record'
+                                                                message : 'Error while deleting doctor record'
                                                             });
                                                         } else {
                                                             return res.status(200).json({
@@ -711,13 +731,13 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             console.error(error);
                                             res.status(500).json({
                                                 success: false,
-                                                error: 'Error while getting appointment details'
+                                                message : 'Error while getting appointment details'
                                             });
                                         } else {
                                             if (result.length === 0) {
                                                 res.status(400).json({
                                                     success: false,
-                                                    error: 'Invalid patientId or no appointments found '
+                                                    message : 'Invalid patientId or no appointments found '
                                                 });
                                             } else {
                                                 res.status(200).json({
@@ -744,7 +764,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             con.query(sql, (error, result) => {
                                             if (error) {
                                                 console.error(error);
-                                                res.status(500).json({ err: 'Error while getting all Appointments' });
+                                                res.status(500).json({ message : 'Error while getting all Appointments' });
                                             } else {
                                                 res.status(200).json({ success: true, message: 'All Appointments', allAppointments: result });
                                             }
@@ -767,13 +787,13 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                             console.error(error);
                                                             res.status(500).json({
                                                                 success: false,
-                                                                error: 'Error while getting appointment details'
+                                                                message : 'Error while getting appointment details'
                                                             });
                                                         } else {
                                                             if (result.length === 0) {
                                                                 res.status(400).json({
                                                                     success: false,
-                                                                    error: 'Invalid doctorId or no appointments found '
+                                                                    message : 'Invalid doctorId or no appointments found '
                                                                 });
                                                             } else {
                                                                 res.status(200).json({
