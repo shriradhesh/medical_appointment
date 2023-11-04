@@ -22,6 +22,8 @@ const upload = require('../uploadImages')
                      router.get('/myRatings/:doctorId' , doctorController.myRatings)
 // API for loginPD
                     router.post('/loginPD', doctorController.loginPD)
+// API for cancel appointments 
+                    router.post('/cancelAppointments_for_Date/:doctorId', doctorController.cancelAppointments_for_Date)
                  
 
 

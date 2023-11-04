@@ -404,7 +404,7 @@ const googleMapClient = createClient({
                                             sql += ` AND specialization = '${specialization}'`;
                                         }
                                     
-                                        if (Experience) {
+                                        if (Experience) {                                                     
                                             switch (Experience) {
                                             case '0-5':
                                                 sql += ' AND Experience >= 0 AND Experience <= 5';
@@ -890,88 +890,88 @@ const googleMapClient = createClient({
   // API for see my Appointments - 
                                    
                    
-                                                const myAppointments = async (req, res) => {
-                                                    try {
-                                                        const patientId = req.params.patientId;
+                                            const myAppointments = async (req, res) => {
+                                                try {
+                                                    const patientId = req.params.patientId;
 
-                                                        // Get today's date
-                                                        const today = new Date();
-                                                        const formattedToday = today.toISOString().split('T')[0];
+                                                    // Get today's date
+                                                    const today = new Date();
+                                                    const formattedToday = today.toISOString().split('T')[0];
 
-                                                        const viewAppointmentSql = `
-                                                            SELECT A.*, P.Phone_no, P.FirstName
-                                                            FROM appointments A
-                                                            JOIN patient P ON A.patientId = P.patientId
-                                                            WHERE A.Appointment_Date = ? AND P.patientId = ?
-                                                            ORDER BY A.Appointment_Date, A.Appointment_StartTime
-                                                        `;
+                                                    const viewAppointmentSql = `
+                                                        SELECT A.*, P.Phone_no, P.FirstName
+                                                        FROM appointments A
+                                                        JOIN patient P ON A.patientId = P.patientId
+                                                        WHERE A.Appointment_Date = ? AND P.patientId = ?
+                                                        ORDER BY A.Appointment_Date, A.Appointment_StartTime
+                                                    `;
 
-                                                        const viewAppointmentValues = [formattedToday, patientId];
+                                                    const viewAppointmentValues = [formattedToday, patientId];
 
-                                                        con.query(viewAppointmentSql, viewAppointmentValues, async (error, result) => {
-                                                            if (error) {
-                                                                return res.status(500).json({
-                                                                    success: false,
-                                                                    message: "There is an error finding Appointments",
-                                                                });
-                                                            } else if (result.length === 0) {
-                                                                return res.status(400).json({
-                                                                    success: false,
-                                                                    message: "No Appointments Found",
-                                                                });
-                                                            } else {
-                                                                res.status(200).json({
-                                                                    success: true,
-                                                                    message: 'Your Appointments',
-                                                                    appointments: result,
-                                                                });
-                                                            }
-                                                        });
+                                                    con.query(viewAppointmentSql, viewAppointmentValues, async (error, result) => {
+                                                        if (error) {
+                                                            return res.status(500).json({
+                                                                success: false,
+                                                                message: "There is an error finding Appointments",
+                                                            });
+                                                        } else if (result.length === 0) {
+                                                            return res.status(400).json({
+                                                                success: false,
+                                                                message: "No Appointments Found",
+                                                            });
+                                                        } else {
+                                                            res.status(200).json({
+                                                                success: true,
+                                                                message: 'Your Appointments',
+                                                                appointments: result,
+                                                            });
+                                                        }
+                                                    });
 
-                                                    } catch (error) {
-                                                        return res.status(500).json({
-                                                            success: false,
-                                                            message: "There is an error",
-                                                        });
-                                                    }
-                                                };
-
-                                                const sendSMSReminder = (appointment , patient) =>{
-                                                    const message = `Hello ${patient.FirstName},
-                                                                         -------@@----------
-                                                                         Your Appointment is today
-                                                                            at
-                                                                        ${appointment.Appointment_StartTime}
-                                                                       `
-                                                    client.messages.create({
-                                                        body : message , 
-                                                        from : twilioPhoneNumber,
-                                                        to : patient.Phone_no
-                                                    })
-                                                    .then((message) => console.log(`an Alert message sent : ${message.sid}`))
-                                                    .catch((error) => console.error(`Error sending SMS : ${error}`))
+                                                } catch (error) {
+                                                    return res.status(500).json({
+                                                        success: false,
+                                                        message: "There is an error",
+                                                    });
                                                 }
+                                            };
+
+                                            const sendSMSReminder = (appointment , patient) =>{
+                                                const message = `Hello ${patient.FirstName},
+                                                                    -------@@----------
+                                                                    Your Appointment is today
+                                                                        at
+                                                                    ${appointment.Appointment_StartTime}
+                                                                `
+                                                client.messages.create({
+                                                    body : message , 
+                                                    from : twilioPhoneNumber,
+                                                    to : patient.Phone_no
+                                                })
+                                                .then((message) => console.log(`an Alert message sent : ${message.sid}`))
+                                                .catch((error) => console.error(`Error sending SMS : ${error}`))
+                                            }
 
 
 
-                                                            const sendAppointmentReminder = (con) =>{
-                                                                const today = new Date().toISOString().split('T')[0]
+                                                        const sendAppointmentReminder = (con) =>{
+                                                            const today = new Date().toISOString().split('T')[0]
 
-                                                                const reminderSql = `
-                                                                SELECT A.* , P.Phone_no , P.FirstName
-                                                                FROM appointments A JOIN patient P ON
-                                                                A.patientId = P.patientId
-                                                                WHERE A.Appointment_Date = ?`
+                                                            const reminderSql = `
+                                                            SELECT A.* , P.Phone_no , P.FirstName
+                                                            FROM appointments A JOIN patient P ON
+                                                            A.patientId = P.patientId
+                                                            WHERE A.Appointment_Date = ?`
 
-                                                                con.query(reminderSql , [today] , (error , result)=>{
-                                                                    if (error){
-                                                                        console.error('Error retriving appointments for reminder ', error);
-                                                                    }
-                                                                    else {
-                                                                        result.forEach(appointment => sendSMSReminder(appointment , result))
-                                                                    }
-                                                                })
-                                                            }
+                                                            con.query(reminderSql , [today] , (error , result)=>{
+                                                                if (error){
+                                                                    console.error('Error retriving appointments for reminder ', error);
+                                                                }
+                                                                else {
+                                                                    result.forEach(appointment => sendSMSReminder(appointment , result))
+                                                                }
+                                                            })
+                                                        }
 
 // API for get direction from google
                                 function getDirection (patientLocation , doctorAddress , callback){

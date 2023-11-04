@@ -411,8 +411,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             city,
                                             state,
                                             status
-                                        } = req.body;
-                                
+                                        } = req.body;                               
                                       
                                 
                                         const hashedPassword = await bcrypt.hash(password, 10);

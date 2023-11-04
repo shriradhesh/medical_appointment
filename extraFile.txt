@@ -178,3 +178,86 @@ const login = async (req, res) => {
     });
 };
 
+
+   ...............
+------------------->
+   ...............
+
+
+const cancelAppointmentsForDate = async (req, res) => {
+    try {
+        const doctorId = req.params.doctorId;
+        const cancelDate = req.body.cancelDate; // Assuming you send the cancel date in the request body
+
+        if (!cancelDate) {
+            res.status(400).json({
+                success: false,
+                message: 'Please provide a cancelDate in the request body.',
+            });
+            return;
+        }
+
+        // Construct a SQL query to delete appointments for the specified doctor on the given date
+        const query = `
+            DELETE FROM appointments
+            WHERE doctorId = ? AND DATE(Appointment_Date) = ?
+        `;
+        const queryParams = [doctorId, cancelDate];
+
+        // Execute the query using your database connection
+        con.query(query, queryParams, (error, result) => {
+            if (error) {
+                console.error('Error while executing SQL query:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error while canceling appointments',
+                });
+            } else {
+                res.status(200).json({
+                    success: true,
+                    message: 'Appointments for the specified date canceled successfully.',
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'There is an error',
+        });
+    }
+};
+
+
+
+   ....................
+    ......................
+
+const twilio = require('twilio');
+
+// Twilio credentials
+const accountSid = 'YOUR_ACCOUNT_SID';
+const authToken = 'YOUR_AUTH_TOKEN';
+const client = new twilio(accountSid, authToken);
+
+const sendCancellationMessage = (patientId, doctorId, cancelDate) => {
+    // Fetch patient's phone number based on patientId from your database
+    const patientPhoneNumber = 'REPLACE_WITH_PATIENT_PHONE_NUMBER';
+
+    const from = 'YOUR_PHONE_NUMBER'; // Your Twilio phone number
+    const to = patientPhoneNumber; // Recipient's phone number
+    const body = `Your appointment with doctor ${doctorId} on ${cancelDate} has been canceled.`;
+
+    // Send SMS using Twilio
+    client.messages.create({ body, from, to })
+        .then((message) => {
+            console.log(`Cancellation message sent to ${to}: ${message.sid}`);
+        })
+        .catch((error) => {
+            console.error('Error sending SMS:', error);
+        });
+};
+
+// Rest of the cancelAppointmentsForDate function remains the same
+
+

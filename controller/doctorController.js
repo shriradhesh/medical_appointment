@@ -6,7 +6,11 @@ const { error } = require('console');
 const { resolve } = require('path');
 const { rejects } = require('assert');
 const sendEmails = require('../utils/forgetpass_sentEmail')
+const twilio = require('twilio')
 
+const accountSid = 'ACea0cb782d52a715846acedc254632e9e';
+const authToken = '9920e53cb0ddef7283f32ec3a392e531';
+const client = new twilio('ACea0cb782d52a715846acedc254632e9e', '9920e53cb0ddef7283f32ec3a392e531');
 
 
 // APi for Doctor login
@@ -418,6 +422,104 @@ const sendEmails = require('../utils/forgetpass_sentEmail')
                                         };
                                         
 
+        // Delete Appointments 
+                                            const cancelAppointments_for_Date = async (req, res) => {
+                                                try {
+                                                    const doctorId = req.params.doctorId;
+                                                    const cancelDate = req.query.cancelDate;
+                                                
+                                                    if (!cancelDate) {
+                                                    return res.status(400).json({
+                                                        success: false,
+                                                        message: 'Enter cancel date',
+                                                    });
+                                                    }
+                                                     
+
+                                                    const selectQuery = `SELECT a.patientId , p.Phone_no from appointments AS a 
+                                                    INNER JOIN patient AS p ON a.patientId = p.patientId                                                    
+                                                    WHERE a.doctorId = ? AND DATE(a.Appointment_Date) = ?
+                                                    `;
+                                                    const selectValue = [doctorId , cancelDate]
+                                                    con.query(selectQuery , selectValue , (error , result)=>{
+                                                        if(error)
+                                                        {throw error
+                                                        }
+                                                            
+                                                        if(result.length === 0)
+                                                        {
+                                                            return res.status(400).json({
+                                                                   success : false ,
+                                                                   message : 'patient record not found'
+                                                            })
+                                                        }
+                                                        else{
+                                                            const updateQuery = `
+                                                    UPDATE appointments
+                                                     SET Appointment_Status = 'cancelled'
+                                                    WHERE doctorId = ? AND DATE(Appointment_Date) = ?
+                                                    `;
+                                                
+                                                    const queryValue = [doctorId, cancelDate];
+                                                
+                                                    con.query(updateQuery, queryValue, (error, updateResult) => {
+                                                    if (error) {
+                                                        throw error
+                                                    }
+                                                        
+                                                    else if (updateResult.affectedRows === 0) {
+                                                        return res.status(400).json({
+                                                        success: false,
+                                                        message: 'No appointment found',
+                                                        });
+                                                    }                                                         
+                                                    else 
+                                                    {                                             
+
+                                                        const patientPhoneNumber = [];
+                                                        for (let i = 0; i < result.length; i++) {
+                                                                  const data = parseInt(result[i].Phone_no)
+                                                                
+                                                            patientPhoneNumber.push(data);
+                                                                                                            
+                                                        }
+                                                                console.log('patientPhoneNumber :-  ', patientPhoneNumber);
+                                                        
+                                         
+                                                        patientPhoneNumber.forEach((Phone_no) => {
+                                                            client.messages.create({
+                                                                body: `Your appointment on ${cancelDate} has been cancelled because Doctor not available`,
+                                                                from: '+16205914136',  
+                                                                to: Phone_no,  
+                                                            })
+                                                            .then((message) => {
+                                                                console.log(`SMS sent to ${Phone_no}: ${message.sid}`);
+                                                            })
+                                                            .catch((smsError) => {
+                                                                console.error(`Failed to send SMS to ${Phone_no}: ${smsError}`);
+                                                            });
+                                                            
+                                                        });
+                                                
+                                                        res.status(200).json({
+                                                        success: true,
+                                                        message: `All the appointments for the date: ${cancelDate} canceled successfully`,
+                                                        });
+                                                    }
+                                                    });
+                                                        }                                                     
+                                                        
+                                                    })                                                    
+                                                    
+                                                } catch (error) {
+                                                    res.status(500).json({
+                                                    success: false,
+                                                    message: 'There is an error',
+                                                    });
+                                                }
+                                                };
+                                                
+                                      
 
         module.exports = { loginDoctor , doctor_updateProfile , DoctorChangepass  , 
-                       seeAppointments , createSchedule , myRatings , loginPD  }
+                       seeAppointments , createSchedule , myRatings , loginPD , cancelAppointments_for_Date }
