@@ -18,7 +18,9 @@ const adminController = require('../controller/adminController')
 
                  router.post('/Admin_forgetPassToken', adminController.Admin_forgetPassToken)
                           // reset password using token 
-                 router.post('/Admin_reset_Password/:adminId/:tokenValue', adminController.Admin_reset_Password)
+                 router.post('/Admin_reset_Password/:tokenValue', adminController.Admin_reset_Password)
+// API for get Admin 
+                 router.post('/getAdmin/:email', adminController.getAdmin)
 
 
                                         /* MANAGE ACCOUNT */

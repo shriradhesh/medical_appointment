@@ -70,21 +70,21 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         res.status(500).json({ success: false, message : 'Error querying the database' });
                                                     } else {
                                                         if (results.length === 0) {
-                                                        res.status(401).json({ success: false, message : 'username not found' });
+                                                        res.status(401).json({ success: false, userMessage : 'username not found' });
                                                         } else {
                                                         const hashedPassword = results[0].password;
                                                         
                                                         bcrypt.compare(password, hashedPassword, function (error, isMatch) {
                                                             if (error) {
-                                                            res.status(500).json({ success: false, message : 'Error comparing passwords' });
+                                                            res.status(500).json({ success: false, compreMessage : 'Error comparing passwords' });
                                                             } else if (!isMatch) {
                                                             
-                                                            res.status(401).json({ success: false, message : 'Incorrect password' });
+                                                            res.status(401).json({ success: false, passwordMessage : 'Incorrect password' });
                                                             } else {
                                                             // Passwords match, login successful
                                                             res.status(200).json({
                                                                 success: true,
-                                                                message: 'Admin logged in successfully',
+                                                                success_message: 'Admin logged in successfully',
                                                                 admin_details: results[0]
                                                             });
                                                             }
@@ -188,7 +188,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                 }
                                     
                                                 if (results.length === 0) {
-                                                    return res.status(404).json({ success: false, message : 'Admin not found' });
+                                                    return res.status(404).json({ success: false, message : 'Email not exist ' });
                                                 }
                                     
                                                 const admin = results[0];
@@ -210,7 +210,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                                 return res.status(500).json({ success: false, message : 'An error occurred' });
                                                             }
                                     
-                                                            const resetLink = `${process.env.BASE_URL}/password-reset/${admin.Id}/${token}`;
+                                                            const resetLink = `${process.env.BASE_URL}`;
                                                             AdminsendEmails(admin.email, 'Password Reset', resetLink);
                                     
                                                             res.status(200).json({
@@ -221,12 +221,13 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                     } else {
                                                         token = tokenResults[0].token;
                                     
-                                                        const resetLink = `${process.env.BASE_URL}/password-reset/${admin.Id}/${token}`;
+                                                        const resetLink = `${process.env.BASE_URL}`;
                                                         AdminsendEmails(admin.email, 'Password Reset', resetLink);
                                     
                                                         res.status(200).json({
                                                             success: true,
                                                             message: 'Password reset link sent to your email account',
+                                                            token : token
                                                         });
                                                     }
                                                 });
@@ -249,71 +250,57 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
     // API for reseting the forgetpassword using token
                         const Admin_reset_Password = async (req, res) => {
                             try {
-                            const { password } = req.body;
-                            const adminId = req.params.adminId;
-                            const tokenValue = req.params.tokenValue;                            
-
+                                const { password, confirmPassword } = req.body;
+                                const tokenValue = req.params.tokenValue;
                         
-                            if (!password) {
-                                return res.status(400).json({ success: false, message : 'Password is required' });
-                            }
-                        
-                            // Check if the patient exists based on ID
-                            const adminQuery = 'SELECT * FROM admin WHERE Id = ?';
-                            con.query(adminQuery, [adminId], async (error, adminResult) => {
-                                if (error) {
-                                return res.status(500).json({ success: false, message : 'An error occurred' });
+                                if (!password) {
+                                    return res.status(400).json({ success: false, passwordMessage: 'Password is required' });
                                 }
                         
-                                if (adminResult.length === 0) {
-                                return res.status(400).json({ success: false, message : 'Invalid Link or Expired' });
+                                if (password !== confirmPassword) {
+                                    return res.status(400).json({ success: false, confirmPasswordMessage: 'Passwords do not match' });
                                 }
                         
-                                const admins = adminResult[0];
-                        
-                                // Check if a password reset token already exists for the patient
-                                const tokenQuery = 'SELECT * FROM admin_tokenschema WHERE adminId = ? AND token = ?';
-                                con.query(tokenQuery, [admins.Id, tokenValue], async (error, tokenResults) => {
-                                if (error) {
-                                    return res.status(500).json({ success: false, message : 'An error occurred' });
-                                }
-                            
-                        
-                                if (tokenResults.length === 0) {
-                                    return res.status(400).json({ success: false, message : 'Invalid link or expired' });
-                                }
-                        
-                                const tokenRecord = tokenResults[0];
-                        
-                                // If token is valid, proceed to reset password
-                                const hashedPassword = await bcrypt.hash(password, 10);
-                        
-                                // Update the patient's password in the database
-                                const updatePasswordQuery = 'UPDATE admin SET password = ? WHERE Id = ?';
-                                con.query(updatePasswordQuery, [hashedPassword, admins.Id], async (error) => {
+                                // Check if the password reset token exists
+                                const tokenQuery = 'SELECT * FROM admin_tokenschema WHERE token = ?';
+                                con.query(tokenQuery, [tokenValue], async (error, tokenResults) => {
                                     if (error) {
-                                    return res.status(500).json({ success: false, message : 'An error occurred' });
+                                        return res.status(500).json({ success: false, message: 'An error occurred' });
                                     }
                         
-                                    // Delete the used token
-                                    const deleteTokenQuery = 'DELETE FROM admin_tokenschema WHERE adminId = ? AND token = ?';
-                                    con.query(deleteTokenQuery, [admins.Id, tokenValue], async (error) => {
-                                    if (error) {
-                                        return res.status(500).json({ success: false, message : 'An error occurred' });
+                                    if (tokenResults.length === 0) {
+                                        return res.status(400).json({ success: false, message: 'Invalid link or expired' });
                                     }
                         
-                                    res.status(200).json({ success: true, message: 'Password reset successfully' });
+                                    const tokenRecord = tokenResults[0];
+                        
+                                    // If token is valid, proceed to reset password
+                                    const hashedPassword = await bcrypt.hash(password, 10);
+                        
+                                    // Update the admin's password in the database
+                                    const updatePasswordQuery = 'UPDATE admin SET password = ? WHERE Id = ?';
+                                    con.query(updatePasswordQuery, [hashedPassword, tokenRecord.adminId], async (error) => {
+                                        if (error) {
+                                            return res.status(500).json({ success: false, message: 'An error occurred' });
+                                        }
+                        
+                                        // Delete the used token
+                                        const deleteTokenQuery = 'DELETE FROM admin_tokenschema WHERE token = ?';
+                                        con.query(deleteTokenQuery, [tokenValue], async (error) => {
+                                            if (error) {
+                                                return res.status(500).json({ success: false, errormessage: 'An error occurred' });
+                                            }
+                        
+                                            res.status(200).json({ success: true, successMessage: 'Password reset successfully' });
+                                        });
                                     });
                                 });
-                                });
-                            });
                             } catch (error) {
-                            console.error('message : ', error);
-                            res.status(500).json({ success: false, message : 'An error occurred' });
+                                console.error('message : ', error);
+                                res.status(500).json({ success: false, message: 'An error occurred' });
                             }
                         };
-
-
+                        
     
                                       /* Manage Account */
 
@@ -340,7 +327,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                                         });
                                                     }
                                         
-                                                    const imagePath = req.file.path;
+                                                    const imagePath = req.file.filename;
                                         
                                                     // Check if profileImage is already set for the admin
                                                     if (results[0].profileImage) {
@@ -385,6 +372,37 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             }
                                         };
     
+
+        // get Admin profile
+                                                        const getAdmin = (req, res) => {
+                                                            const email = req.params.email;
+                                                            const sql = 'SELECT * FROM admin WHERE email = ?';
+                                                        
+                                                            con.query(sql, [email], (error, result) => {
+                                                                if (error) {
+                                                                    console.error('Error while getting Admin details:', error);
+                                                                    res.status(500).json({
+                                                                        success: false,
+                                                                        message: 'Error while getting Admin details',
+                                                                    });
+                                                                } else {
+                                                                    if (result.length === 0) {
+                                                                        res.status(400).json({
+                                                                            success: false,
+                                                                            message: 'Invalid Admin email',
+                                                                        });
+                                                                    } else {
+                                                                        res.status(200).json({
+                                                                            success: true,
+                                                                            message: 'Admin Details:',
+                                                                            Admin_details: result,
+                                                                        });
+                                                                    }
+                                                                }
+                                                            });
+                                                        };
+                                                        
+
     
                                                               
      
@@ -807,7 +825,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
               
                                 
     
-module.exports = { register_Admin, loginAdmin , AdminChangePass  , Admin_forgetPassToken,
+module.exports = { register_Admin, loginAdmin , AdminChangePass  , Admin_forgetPassToken, getAdmin ,
                    Admin_reset_Password ,updateProfile  , AddDoctor , allDoctor , getDoctor,
                    updateDoctorDetails , checkAndToggleStatus , deleteDoctor , getbookingAppointment_ByPatient ,
                    allAppointments , seebookingAppointment_ofDoctor}

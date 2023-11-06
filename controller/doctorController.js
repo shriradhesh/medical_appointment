@@ -474,7 +474,7 @@ const client = new twilio('ACea0cb782d52a715846acedc254632e9e', '9920e53cb0ddef7
                                                         });
                                                     }                                                         
                                                     else 
-                                                    {                                             
+                                                    {                                            
 
                                                         const patientPhoneNumber = [];
                                                         for (let i = 0; i < result.length; i++) {
