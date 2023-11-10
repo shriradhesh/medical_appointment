@@ -1062,7 +1062,7 @@ const googleMapClient = createClient({
                                     else
                                     {
                                         // Get the file path of the uploaded PHR report 
-                                        const phrFilePath = req.file.path
+                                        const phrFilePath = req.file.filename
                                         const existingPHR_Record = result[0].existingPHR_Record
                                         
                                         if(existingPHR_Record)

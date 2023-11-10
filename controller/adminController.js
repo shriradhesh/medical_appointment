@@ -434,7 +434,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                 
                                         const hashedPassword = await bcrypt.hash(password, 10);
                                 
-                                        const imagePath = req.file.path;
+                                        const imagePath = req.file.filename;
                                         // check for LicenseNumber existance
 
                                         const licenseCheckQuery = 'SELECT COUNT (*) AS licenseCount FROM doctor WHERE licenseNumber = ?'
@@ -736,11 +736,23 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                 const getbookingAppointment_ByPatient = (req, res) => {
                                     const patientId = req.params.patientId;
                                     let { startDate, endDate } = req.query;
-                                    let sql = `SELECT * FROM appointments WHERE patientId = ${patientId}`;
+                                    
+                                    let sql = `
+                                        SELECT appointments.*, 
+                                               patient.firstName AS patientFirstName, 
+                                               patient.Email AS patientEmail, 
+                                               doctor.firstName AS doctorFirstName, 
+                                               doctor.Email AS doctorEmail 
+                                        FROM appointments
+                                        JOIN patient ON appointments.patientId = patient.patientId
+                                        JOIN doctor ON appointments.doctorId = doctor.doctorId
+                                        WHERE appointments.patientId = ${patientId}
+                                    `;
+                                    
                                     if (startDate && endDate) {
-                                        sql += ` AND Appointment_Date >= '${startDate}' AND Appointment_Date <= '${endDate}'`;
+                                        sql += ` AND appointments.Appointment_Date >= '${startDate}' AND appointments.Appointment_Date <= '${endDate}'`;
                                     } else if (startDate) {
-                                        sql += ` AND Appointment_Date = '${startDate}'`;
+                                        sql += ` AND appointments.Appointment_Date = '${startDate}'`;
                                     }
                                 
                                     con.query(sql, (error, result) => {
@@ -748,13 +760,13 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                             console.error(error);
                                             res.status(500).json({
                                                 success: false,
-                                                message : 'Error while getting appointment details'
+                                                message: 'Error while getting appointment details'
                                             });
                                         } else {
                                             if (result.length === 0) {
                                                 res.status(400).json({
                                                     success: false,
-                                                    message : 'Invalid patientId or no appointments found '
+                                                    message: 'Invalid patientId or no appointments found '
                                                 });
                                             } else {
                                                 res.status(200).json({
@@ -766,6 +778,7 @@ const AdminsendEmails = require('../utils/Adminforgetpass_sentEmail')
                                         }
                                     });
                                 };
+                                
 
             // API for get all Appointments done by patients 
                                         const allAppointments = (req, res) => {
